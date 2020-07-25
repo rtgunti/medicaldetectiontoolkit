@@ -14,7 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""execution script."""
+"""execution script. Test push"""
 
 import argparse
 import os
@@ -25,6 +25,7 @@ import utils.exp_utils as utils
 from evaluator import Evaluator
 from predictor import Predictor
 from plotting import plot_batch_prediction
+from torchsummary import summary
 
 
 def train(logger):
@@ -36,6 +37,7 @@ def train(logger):
         cf.dim, cf.fold, cf.exp_dir, cf.model))
 
     net = model.net(cf, logger).cuda()
+    
     optimizer = torch.optim.Adam(net.parameters(), lr=cf.learning_rate[0], weight_decay=cf.weight_decay)
     model_selector = utils.ModelSelector(cf, logger)
     train_evaluator = Evaluator(cf, logger, mode='train')
@@ -47,7 +49,8 @@ def train(logger):
     monitor_metrics, TrainingPlot = utils.prepare_monitoring(cf)
 
     if cf.resume_to_checkpoint:
-        starting_epoch, monitor_metrics = utils.load_checkpoint(cf.resume_to_checkpoint, net, optimizer)
+        path_to_checkpoint = os.path.join(cf.exp_dir, ("fold_" + str(cf.fold)), cf.resume_to_checkpoint)
+        starting_epoch, monitor_metrics = utils.load_checkpoint(path_to_checkpoint, net, optimizer)
         logger.info('resumed to checkpoint {} at epoch {}'.format(cf.resume_to_checkpoint, starting_epoch))
 
     logger.info('loading dataset and initializing batch generators...')
@@ -72,9 +75,11 @@ def train(logger):
             optimizer.zero_grad()
             results_dict['torch_loss'].backward()
             optimizer.step()
-            logger.info('tr. batch {0}/{1} (ep. {2}) fw {3:.3f}s / bw {4:.3f}s / total {5:.3f}s || '
-                        .format(bix + 1, cf.num_train_batches, epoch, tic_bw - tic_fw,
-                                time.time() - tic_bw, time.time() - tic_fw) + results_dict['logger_string'])
+#             logger.info('tr. batch {0}/{1} (ep. {2}) fw {3:.3f}s / bw {4:.3f}s / total {5:.3f}s || '
+#                         .format(bix + 1, cf.num_train_batches, epoch, tic_bw - tic_fw,
+#                                 time.time() - tic_bw, time.time() - tic_fw) + results_dict['logger_string'])
+            logger.info('tr. (ep. {0}) batch {1:2}/{2} || '
+                        .format(epoch, bix + 1, cf.num_train_batches) + results_dict['logger_string'])
             train_results_list.append([results_dict['boxes'], batch['pid']])
             monitor_metrics['train']['monitor_values'][epoch].append(results_dict['monitor_values'])
 
@@ -93,16 +98,24 @@ def train(logger):
                         results_dict = val_predictor.predict_patient(batch)
                     elif cf.val_mode == 'val_sampling':
                         results_dict = net.train_forward(batch, is_validation=True)
+                        logger.info('val. (ep. {0}) batch {1}/{2} || '
+                        .format(epoch, _ + 1, batch_gen['n_val']) + results_dict['logger_string'])                     
                     val_results_list.append([results_dict['boxes'], batch['pid']])
                     monitor_metrics['val']['monitor_values'][epoch].append(results_dict['monitor_values'])
 
                 _, monitor_metrics['val'] = val_evaluator.evaluate_predictions(val_results_list, monitor_metrics['val'])
                 model_selector.run_model_selection(net, optimizer, monitor_metrics, epoch)
+#             logger.info('train_loss : {0} train_dice_score : {1} train_dice_ap : {2} val_loss : {3} val_dice_score : {4} val_dice_ap : {5}'\
+#                         .format(monitor_metrics['train']['monitor_values'][epoch]))
+#             train_metrics = monitor_metrics['train']['monitor_values'][epoch]
+#             val_metrics = monitor_metrics['val']['monitor_values'][epoch]
+#             logger.info('train_loss : {0}'
+#                         .format(monitor_metrics['train']['monitor_values'][epoch]['loss']))
 
             # update monitoring and prediction plots
-            TrainingPlot.update_and_save(monitor_metrics, epoch)
+            TrainingPlot.update_and_save(monitor_metrics, starting_epoch, epoch)
             epoch_time = time.time() - start_time
-            logger.info('trained epoch {}: took {} sec. ({} train / {} val)'.format(
+            logger.info('trained epoch {0:}: took {1:.2f} sec. ({2:.2f} train / {3:.2f} val)'.format(
                 epoch, epoch_time, train_time, epoch_time-train_time))
             batch = next(batch_gen['val_sampling'])
             results_dict = net.train_forward(batch, is_validation=True)
@@ -142,7 +155,7 @@ if __name__ == '__main__':
                              'where source code might change before the job actually runs.')
     parser.add_argument('--resume_to_checkpoint', type=str, default=None,
                         help='if resuming to checkpoint, the desired fold still needs to be parsed via --folds.')
-    parser.add_argument('--exp_source', type=str, default='experiments/toy_exp',
+    parser.add_argument('--exp_source', type=str, default='experiments/lidc_exp',
                         help='specifies, from which source experiment to load configs and data_loader.')
     parser.add_argument('-d', '--dev', default=False, action='store_true', help="development mode: shorten everything")
 
@@ -154,9 +167,11 @@ if __name__ == '__main__':
 
         cf = utils.prep_exp(args.exp_source, args.exp_dir, args.server_env, args.use_stored_settings)
         if args.dev:
-            folds = [0,1]
-            cf.batch_size, cf.num_epochs, cf.min_save_thresh, cf.save_n_models = 3 if cf.dim==2 else 1, 1, 0, 1
-            cf.num_train_batches, cf.num_val_batches, cf.max_val_patients = 5, 1, 1
+            folds = [0]
+            cf.n_workers = 1
+            cf.select_prototype_subset = 10
+            cf.batch_size, cf.num_epochs, cf.min_save_thresh, cf.save_n_models = 3 if cf.dim==2 else 2, 10, 0, 2
+            cf.num_train_batches, cf.num_val_batches, cf.max_val_patients = 2, 2, 2
             cf.test_n_epochs =  cf.save_n_models
             cf.max_test_patients = 1
 

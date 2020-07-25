@@ -94,10 +94,13 @@ class fold_generator:
             # missing is the number of folds, in which the new splits are reduced to account for missing data.
             self.missing = self.n_splits - self.mod
 
-        self.te_ix = t[:self.slicer]
+#         self.te_ix = t[:self.slicer]
+#         self.tr_ix = t[self.slicer:]
+#         self.val_ix = self.tr_ix[:self.slicer]
+#         self.tr_ix = self.tr_ix[self.slicer:]
+        
+        self.val_ix = t[:self.slicer]
         self.tr_ix = t[self.slicer:]
-        self.val_ix = self.tr_ix[:self.slicer]
-        self.tr_ix = self.tr_ix[self.slicer:]
 
     def new_fold(self):
 

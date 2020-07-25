@@ -28,10 +28,11 @@ class configs(DefaultConfigs):
         #    Preprocessing      #
         #########################
 
-        self.root_dir = '/path/to/raw/data'
-        self.raw_data_dir = '{}/data_nrrd'.format(self.root_dir)
-        self.pp_dir = '{}/pp_norm'.format(self.root_dir)
-        self.target_spacing = (0.7, 0.7, 1.25)
+        self.root_dir = '/home/jupyter-rgunti/data/Thesis'
+        self.raw_data_dir = '{}/data_raw/data/'.format(self.root_dir)
+        self.raw_seg_dir = '{}/data_raw/seg/'.format(self.root_dir)
+        self.pp_dir = '{}/data_pp'.format(self.root_dir)
+        self.target_spacing = (1.0, 1.0, 2.25)
 
         #########################
         #         I/O           #
@@ -39,20 +40,23 @@ class configs(DefaultConfigs):
 
 
         # one out of [2, 3]. dimension the model operates in.
-        self.dim = 2
+        self.dim = 3
 
-        # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn', 'detection_unet'].
-        self.model = 'retina_unet'
-
+        # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
+        self.model = 'detection_unet'
+        
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
         # int [0 < dataset_size]. select n patients from dataset for prototyping. If None, all data is used.
-        self.select_prototype_subset = 100
+        self.select_prototype_subset = None
+        self.hold_out_test_set = None
 
         # path to preprocessed data.
-        self.pp_name = 'lidc_mdt'
+        self.pp_name = 'data_pp'
+#         self.pp_name = 'data_livercropped'
+        
         self.input_df_name = 'info_df.pickle'
-        self.pp_data_path = '/media/gregor/HDD2TB/data/lidc/{}'.format(self.pp_name)
+        self.pp_data_path = '{}/{}/'.format(self.root_dir, self.pp_name)
         self.pp_test_data_path = self.pp_data_path #change if test_data in separate folder.
 
         # settings for deployment in cloud.
@@ -73,19 +77,24 @@ class configs(DefaultConfigs):
         self.n_channels = len(self.channels)
 
         # patch_size to be used for training. pre_crop_size is the patch_size before data augmentation.
-        self.pre_crop_size_2D = [300, 300]
-        self.patch_size_2D = [288, 288]
-        self.pre_crop_size_3D = [156, 156, 96]
-        self.patch_size_3D = [128, 128, 64]
-        self.patch_size = self.patch_size_2D if self.dim == 2 else self.patch_size_3D
+        self.pre_crop_size_2D = [256, 256]
+        self.patch_size_2D = [224, 224] 
+        self.use_big_patch = 1
+        if(self.use_big_patch):
+            self.pre_crop_size_3D = [256, 256, 112]
+            self.patch_size_3D = [224, 224, 96]               
+        else:
+            self.pre_crop_size_3D = [156, 156, 96]
+            self.patch_size_3D = [128, 128, 64]
         self.pre_crop_size = self.pre_crop_size_2D if self.dim == 2 else self.pre_crop_size_3D
-
+        self.patch_size = self.patch_size_2D if self.dim == 2 else self.patch_size_3D
+        
         # ratio of free sampled batch elements before class balancing is triggered
         # (>0 to include "empty"/background patches.)
-        self.batch_sample_slack = 0.2
+        self.batch_sample_slack = 0.5 if self.dim == 2 else 1.0
 
         # set 2D network to operate in 3D images.
-        self.merge_2D_to_3D_preds = True
+        self.merge_2D_to_3D_preds = False
 
         # feed +/- n neighbouring slices into channel dimension. set to None for no context.
         self.n_3D_context = None
@@ -97,11 +106,11 @@ class configs(DefaultConfigs):
         #      Architecture      #
         #########################
 
-        self.start_filts = 48 if self.dim == 2 else 18
+        self.start_filts = 48 if self.dim == 2 else 32
         self.end_filts = self.start_filts * 4 if self.dim == 2 else self.start_filts * 2
         self.res_architecture = 'resnet50' # 'resnet101' , 'resnet50'
-        self.norm = None # one of None, 'instance_norm', 'batch_norm'
-        self.weight_decay = 0
+        self.norm = 'batch_norm' # one of None, 'instance_norm', 'batch_norm'
+        self.weight_decay = 0 ## 
 
         # one of 'xavier_uniform', 'xavier_normal', or 'kaiming_normal', None (=default = 'kaiming_uniform')
         self.weight_init = None
@@ -110,35 +119,39 @@ class configs(DefaultConfigs):
         #  Schedule / Selection #
         #########################
 
-        self.num_epochs = 100
-        self.num_train_batches = 200 if self.dim == 2 else 200
-        self.batch_size = 20 if self.dim == 2 else 8
+        self.num_epochs = 600
+        self.num_train_batches = 200 if self.dim == 2 else 50
+        self.batch_size = 20 if self.dim == 2 else 1 if self.use_big_patch else 4
 
-        self.do_validation = True
+        self.do_validation = True if self.select_prototype_subset is None else False
         # decide whether to validate on entire patient volumes (like testing) or sampled patches (like training)
         # the former is morge accurate, while the latter is faster (depending on volume size)
         self.val_mode = 'val_sampling' # one of 'val_sampling' , 'val_patient'
         if self.val_mode == 'val_patient':
-            self.max_val_patients = 50  # if 'None' iterates over entire val_set once.
+            self.max_val_patients = None  # if 'None' iterates over entire val_set once.
         if self.val_mode == 'val_sampling':
-            self.num_val_batches = 50
+            self.num_val_batches = 10
 
         #########################
         #   Testing / Plotting  #
         #########################
 
         # set the top-n-epochs to be saved for temporal averaging in testing.
-        self.save_n_models = 5
-        self.test_n_epochs = 5
+        self.save_n_models = 2
+        self.test_n_epochs = 2
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
 
-        self.report_score_level = ['patient', 'rois']  # choose list from 'patient', 'rois'
-        self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
-        self.patient_class_of_interest = 2  # patient metrics are only plotted for one class.
-        self.ap_match_ious = [0.1]  # list of ious to be evaluated for ap-scoring.
+#         self.report_score_level = ['patient', 'rois']  # choose list from 'patient', 'rois'
+        self.report_score_level = ['rois']
+#         self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
+        self.class_dict = {1: 'lesion'}  # 0 is background.
+#         self.patient_class_of_interest = 2  # patient metrics are only plotted for one class.
+        self.patient_class_of_interest = 1
+        self.ap_match_ious = [0.1, 0.5]  # list of ious to be evaluated for ap-scoring.
 
-        self.model_selection_criteria = ['malignant_ap', 'benign_ap'] # criteria to average over for saving epochs.
+#         self.model_selection_criteria = ['malignant_ap', 'benign_ap'] # criteria to average over for saving epochs.
+        self.model_selection_criteria = ['lesion_ap']
         self.min_det_thresh = 0.1  # minimum confidence value to select predictions for evaluation.
 
         # threshold for clustering predictions together (wcs = weighted cluster scoring).
@@ -147,7 +160,7 @@ class configs(DefaultConfigs):
         self.wcs_iou = 1e-5
 
         self.plot_prediction_histograms = True
-        self.plot_stat_curves = False
+        self.plot_stat_curves = True
 
         #########################
         #   Data Augmentation   #
@@ -158,12 +171,12 @@ class configs(DefaultConfigs):
         'alpha':(0., 1500.),
         'sigma':(30., 50.),
         'do_rotation':True,
-        'angle_x': (0., 2 * np.pi),
+        'angle_x': (0., 0. * np.pi),
         'angle_y': (0., 0),
         'angle_z': (0., 0),
         'do_scale': True,
         'scale':(0.8, 1.1),
-        'random_crop':False,
+        'random_crop':True,
         'rand_crop_dist':  (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3),
         'border_mode_data': 'constant',
         'border_cval_data': 0,
@@ -171,6 +184,7 @@ class configs(DefaultConfigs):
         }
 
         if self.dim == 3:
+            self.da_kwargs['rand_crop_dist'] = (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3, self.patch_size[2] / 2. - 3)
             self.da_kwargs['do_elastic_deform'] = False
             self.da_kwargs['angle_x'] = (0, 0.0)
             self.da_kwargs['angle_y'] = (0, 0.0) #must be 0!!
@@ -190,7 +204,8 @@ class configs(DefaultConfigs):
 
 
     def add_det_unet_configs(self):
-
+        
+        # learning rate is a list with one entry per epoch.
         self.learning_rate = [1e-4] * self.num_epochs
 
         # aggregation from pixel perdiction to object scores (connected component). One of ['max', 'median']
@@ -199,17 +214,19 @@ class configs(DefaultConfigs):
         # max number of roi candidates to identify per batch element and class.
         self.n_roi_candidates = 10 if self.dim == 2 else 30
 
-        # loss mode: either weighted cross entropy ('wce'), batch-wise dice loss ('dice), or the sum of both ('dice_wce')
-        self.seg_loss_mode = 'dice_wce'
+        # loss mode: either weighted cross entropy ('wce'), batch-wise dice loss ('dice'), or the sum of both ('dice_wce')
+        self.seg_loss_mode = 'dice'
 
         # if <1, false positive predictions in foreground are penalized less.
         self.fp_dice_weight = 1 if self.dim == 2 else 1
 
-        self.wce_weights = [1, 1, 1]
+#         self.wce_weights = [1, 1, 1]
+        self.wce_weights = [1, 1]
         self.detection_min_confidence = self.min_det_thresh
 
         # if 'True', loss distinguishes all classes, else only foreground vs. background (class agnostic).
-        self.class_specific_seg_flag = True
+#         self.class_specific_seg_flag = True
+        self.class_specific_seg_flag = False
         self.num_seg_classes = 3 if self.class_specific_seg_flag else 2
         self.head_classes = self.num_seg_classes
 
@@ -226,25 +243,31 @@ class configs(DefaultConfigs):
 
         # set number of proposal boxes to plot after each epoch.
         self.n_plot_rpn_props = 5 if self.dim == 2 else 30
+#         self.n_plot_rpn_props = 5 if self.dim == 2 else 60
 
         # number of classes for head networks: n_foreground_classes + 1 (background)
-        self.head_classes = 3
+#         self.head_classes = 3
+        self.head_classes = 2
 
-        # seg_classes hier refers to the first stage classifier (RPN)
+        # seg_classes here refers to the first stage classifier (RPN)
         self.num_seg_classes = 2  # foreground vs. background
 
         # feature map strides per pyramid level are inferred from architecture.
+        #These values are just to calculate the feature map shaped. Not actually used in code
         self.backbone_strides = {'xy': [4, 8, 16, 32], 'z': [1, 2, 4, 8]}
+#         self.backbone_strides = {'xy': [1, 2, 4, 8], 'z': [1, 2, 4, 8]}
 
         # anchor scales are chosen according to expected object sizes in data set. Default uses only one anchor scale
         # per pyramid level. (outer list are pyramid levels (corresponding to BACKBONE_STRIDES), inner list are scales per level.)
-        self.rpn_anchor_scales = {'xy': [[8], [16], [32], [64]], 'z': [[2], [4], [8], [16]]}
+        self.rpn_anchor_scales = {'xy': [[4], [16], [32], [64]], 'z': [[2], [4], [8], [16]]}
+#         self.rpn_anchor_scales = {'xy': [[8], [8], [8], [8]], 'z': [[8], [8], [8], [8]]}
 
         # choose which pyramid levels to extract features from: P2: 0, P3: 1, P4: 2, P5: 3.
         self.pyramid_levels = [0, 1, 2, 3]
 
         # number of feature maps in rpn. typically lowered in 3D to save gpu-memory.
         self.n_rpn_features = 512 if self.dim == 2 else 128
+#         self.n_rpn_features = 512 if self.dim == 2 else 256
 
         # anchor ratios and strides per position in feature maps.
         self.rpn_anchor_ratios = [0.5, 1, 2]
@@ -303,11 +326,12 @@ class configs(DefaultConfigs):
                   int(np.ceil(self.patch_size[1] / stride)),
                   int(np.ceil(self.patch_size[2] / stride_z))]
                  for stride, stride_z in zip(self.backbone_strides['xy'], self.backbone_strides['z']
-                                             )])
-
+                                             )])        
+            
         if self.model == 'ufrcnn':
             self.operate_stride1 = True
-            self.class_specific_seg_flag = True
+#           self.class_specific_seg_flag = True
+            self.class_specific_seg_flag = False
             self.num_seg_classes = 3 if self.class_specific_seg_flag else 2
             self.frcnn_mode = True
 
@@ -328,6 +352,8 @@ class configs(DefaultConfigs):
             self.anchor_matching_iou = 0.5
 
             # if 'True', seg loss distinguishes all classes, else only foreground vs. background (class agnostic).
+#           self.class_specific_seg_flag = True
+            self.class_specific_seg_flag = False
             self.num_seg_classes = 3 if self.class_specific_seg_flag else 2
 
             if self.model == 'retina_unet':

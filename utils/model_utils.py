@@ -238,7 +238,6 @@ def generate_anchors_3D(scales_xy, scales_z, ratios, shape, feature_stride_xy, f
         value is 2 then generate anchors for every other feature map pixel.
     """
     # Get all combinations of scales and ratios
-
     scales_xy, ratios_meshed = np.meshgrid(np.array(scales_xy), np.array(ratios))
     scales_xy = scales_xy.flatten()
     ratios_meshed = ratios_meshed.flatten()
@@ -263,7 +262,7 @@ def generate_anchors_3D(scales_xy, scales_z, ratios, shape, feature_stride_xy, f
     box_centers = np.stack(
         [box_centers_y, box_centers_x, box_centers_z], axis=2).reshape([-1, 3])
     box_sizes = np.stack([box_heights, box_widths, box_depths], axis=2).reshape([-1, 3])
-
+#     print(box_sizes.shape, np.prod(box_sizes[0]), np.prod(box_sizes[-1]))
     # Convert to corner coordinates (y1, x1, y2, x2, z1, z2)
     boxes = np.concatenate([box_centers - 0.5 * box_sizes,
                             box_centers + 0.5 * box_sizes], axis=1)
@@ -294,8 +293,8 @@ def generate_pyramid_anchors(logger, cf):
     feature_strides = cf.backbone_strides
 
     anchors = []
-    logger.info("feature map shapes: {}".format(feature_shapes))
-    logger.info("anchor scales: {}".format(scales))
+    logger.info("feature map shapes: \n{}".format(feature_shapes))
+    logger.info("anchor scales: \n{}".format(scales))
 
     expected_anchors = [np.prod(feature_shapes[ii]) * len(ratios) * len(scales['xy'][ii]) for ii in pyramid_levels]
 
@@ -307,9 +306,9 @@ def generate_pyramid_anchors(logger, cf):
             anchors.append(generate_anchors_3D(scales['xy'][level], scales['z'][level], ratios, feature_shapes[level],
                                             feature_strides['xy'][level], feature_strides['z'][level], anchor_stride))
 
-        logger.info("level {}: built anchors {} / expected anchors {} ||| total build {} / total expected {}".format(
-            level, anchors[-1].shape, expected_anchors[lix], np.concatenate(anchors).shape, np.sum(expected_anchors)))
-
+        logger.info("level {}: P{} : Built anchors {} / expected anchors {} ||| total build {} / total expected {}".format(
+            level,level+2,anchors[-1].shape, expected_anchors[lix], np.concatenate(anchors).shape, np.sum(expected_anchors)))
+#         print(anchors[-1][len(anchors[-1])//2])
     out_anchors = np.concatenate(anchors, axis=0)
     return out_anchors
 
@@ -388,6 +387,8 @@ def clip_boxes_3D(boxes, window):
     boxes: [N, 6] each col is y1, x1, y2, x2, z1, z2
     window: [6] in the form y1, x1, y2, x2, z1, z2
     """
+#     print(boxes.shape, window.shape)
+    
     boxes = torch.stack( \
         [boxes[:, 0].clamp(float(window[0]), float(window[2])),
          boxes[:, 1].clamp(float(window[1]), float(window[3])),
@@ -402,7 +403,7 @@ def clip_boxes_3D(boxes, window):
 def clip_boxes_numpy(boxes, window):
     """
     boxes: [N, 4] each col is y1, x1, y2, x2 / [N, 6] in 3D.
-    window: iamge shape (y, x, (z))
+    window: image shape (y, x, (z))
     """
     if boxes.shape[1] == 4:
         boxes = np.concatenate(

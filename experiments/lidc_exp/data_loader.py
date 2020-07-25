@@ -39,8 +39,6 @@ from batchgenerators.transforms.spatial_transforms import SpatialTransform
 from batchgenerators.transforms.crop_and_pad_transforms import CenterCropTransform
 from batchgenerators.transforms.utility_transforms import ConvertSegToBoundingBoxCoordinates
 
-
-
 def get_train_generators(cf, logger):
     """
     wrapper function for creating the training batch generator pipeline. returns the train/val generators.
@@ -61,17 +59,23 @@ def get_train_generators(cf, logger):
             fg = pickle.load(handle)
 
     train_ix, val_ix, test_ix, _ = fg[cf.fold]
+    print("Split : ", len(train_ix), len(val_ix), len(test_ix))
 
     train_pids = [all_pids_list[ix] for ix in train_ix]
     val_pids = [all_pids_list[ix] for ix in val_ix]
 
     if cf.hold_out_test_set:
         train_pids += [all_pids_list[ix] for ix in test_ix]
+        test_pids = []
 
+    print("Train pids : ", train_pids)
+    print("Val pids : ", val_pids)
+    
     train_data = {k: v for (k, v) in all_data.items() if any(p == v['pid'] for p in train_pids)}
     val_data = {k: v for (k, v) in all_data.items() if any(p == v['pid'] for p in val_pids)}
-
-    logger.info("data set loaded with: {} train / {} val / {} test patients".format(len(train_ix), len(val_ix), len(test_ix)))
+    
+#     logger.info("data set loaded with: {} train / {} val / {} test records".format(len(train_ix), len(val_ix), len(test_ix)))
+    logger.info("data set loaded with: {} train / {} val records".format(len(train_pids), len(val_pids)))
     batch_gen = {}
     batch_gen['train'] = create_data_gen_pipeline(train_data, cf=cf, is_training=True)
     batch_gen['val_sampling'] = create_data_gen_pipeline(val_data, cf=cf, is_training=False)
@@ -97,8 +101,9 @@ def get_test_generator(cf, logger):
         pp_name = None
         with open(os.path.join(cf.exp_dir, 'fold_ids.pickle'), 'rb') as handle:
             fold_list = pickle.load(handle)
-        _, _, test_ix, _ = fold_list[cf.fold]
-        # warnings.warn('WARNING: using validation set for testing!!!')
+        _, val_ix, test_ix, _ = fold_list[cf.fold]
+        logger.warning('WARNING: using validation set for testing!!!')
+        test_ix = val_ix if len(test_ix) == 0 else test_ix  ## Use val if test is empty
 
     test_data = load_dataset(cf, logger, test_ix, pp_data_path=cf.pp_test_data_path, pp_name=pp_name)
     logger.info("data set loaded with: {} test patients".format(len(test_ix)))
@@ -107,7 +112,6 @@ def get_test_generator(cf, logger):
     batch_gen['n_test'] = len(test_ix) if cf.max_test_patients=="all" else \
         min(cf.max_test_patients, len(test_ix))
     return batch_gen
-
 
 
 def load_dataset(cf, logger, subset_ixs=None, pp_data_path=None, pp_name=None):
@@ -162,13 +166,12 @@ def load_dataset(cf, logger, subset_ixs=None, pp_data_path=None, pp_name=None):
     data = OrderedDict()
     for ix, pid in enumerate(pids):
         # for the experiment conducted here, malignancy scores are binarized: (benign: 1-2, malignant: 3-5)
-        targets = [1 if ii >= 3 else 0 for ii in class_targets[ix]]
+#         targets = [1 if ii >= 3 else 0 for ii in class_targets[ix]]
+        targets = 0
         data[pid] = {'data': imgs[ix], 'seg': segs[ix], 'pid': pid, 'class_target': targets}
         data[pid]['fg_slices'] = p_df['fg_slices'].tolist()[ix]
 
     return data
-
-
 
 def create_data_gen_pipeline(patient_data, cf, is_training=True):
     """
@@ -199,7 +202,7 @@ def create_data_gen_pipeline(patient_data, cf, is_training=True):
     else:
         my_transforms.append(CenterCropTransform(crop_size=cf.patch_size[:cf.dim]))
 
-    my_transforms.append(ConvertSegToBoundingBoxCoordinates(cf.dim, get_rois_from_seg_flag=False, class_specific_seg_flag=cf.class_specific_seg_flag))
+    my_transforms.append(ConvertSegToBoundingBoxCoordinates(cf.dim, get_rois_from_seg_flag=True, class_specific_seg_flag=cf.class_specific_seg_flag))
     all_transforms = Compose(my_transforms)
     # multithreaded_generator = SingleThreadedAugmenter(data_gen, all_transforms)
     multithreaded_generator = MultiThreadedAugmenter(data_gen, all_transforms, num_processes=cf.n_workers, seeds=range(cf.n_workers))
@@ -239,8 +242,10 @@ class BatchGenerator(SlimDataLoaderBase):
         for b in batch_ixs:
             patient = patients[b][1]
 
-            data = np.transpose(np.load(patient['data'], mmap_mode='r'), axes=(1, 2, 0))[np.newaxis] # (c, y, x, z)
-            seg = np.transpose(np.load(patient['seg'], mmap_mode='r'), axes=(1, 2, 0))
+            data = np.load(patient['data'], mmap_mode='r')[np.newaxis] # (x,y,z) to (c,x,y,z)
+            seg = np.load(patient['seg'], mmap_mode='r')
+#             data = np.transpose(np.load(patient['data'], mmap_mode='r'), axes=(1, 2, 0))[np.newaxis] # (c, y, x, z)
+#             seg = np.transpose(np.load(patient['seg'], mmap_mode='r'), axes=(1, 2, 0))
             batch_pids.append(patient['pid'])
             batch_targets.append(patient['class_target'])
 
@@ -249,6 +254,8 @@ class BatchGenerator(SlimDataLoaderBase):
                 if len(patient['fg_slices']) > 0:
                     fg_prob = self.p_fg / len(patient['fg_slices'])
                     bg_prob = (1 - self.p_fg) / (data.shape[3] - len(patient['fg_slices']))
+#                     print("Number of slices : ",data.shape)
+#                     print("raw : {} fg_prob : {} bg_prob : {} self.p_fg : {}".format(len(patient['fg_slices']), fg_prob, bg_prob, self.p_fg))
                     slices_prob = [fg_prob if ix in patient['fg_slices'] else bg_prob for ix in range(data.shape[3])]
                     slice_id = np.random.choice(data.shape[3], p=slices_prob)
                 else:
@@ -310,8 +317,11 @@ class BatchGenerator(SlimDataLoaderBase):
 
         data = np.array(batch_data)
         seg = np.array(batch_segs).astype(np.uint8)
-        class_target = np.array(batch_targets)
+#         class_target = np.array(batch_targets)
+        class_target = batch_targets
+#         print(data.shape, seg.shape, batch_pids, class_target)
         return {'data': data, 'seg': seg, 'pid': batch_pids, 'class_target': class_target}
+#         return {'data': data, 'seg': seg, 'pid': batch_pids}
 
 
 
@@ -338,24 +348,28 @@ class PatientBatchIterator(SlimDataLoaderBase):
 
         pid = self.dataset_pids[self.patient_ix]
         patient = self._data[pid]
-        data = np.transpose(np.load(patient['data'], mmap_mode='r'), axes=(1, 2, 0))[np.newaxis] # (c, y, x, z)
-        seg = np.transpose(np.load(patient['seg'], mmap_mode='r'), axes=(1, 2, 0))
-        batch_class_targets = np.array([patient['class_target']])
+        data = np.load(patient['data'], mmap_mode='r')[np.newaxis] # (x,y,z) to (c,x,y,z)
+        seg = np.load(patient['seg'], mmap_mode='r')
+#         data = np.transpose(np.load(patient['data'], mmap_mode='r'), axes=(1, 2, 0))[np.newaxis] # (c, y, x, z)
+#         seg = np.transpose(np.load(patient['seg'], mmap_mode='r'), axes=(1, 2, 0))
 
+#         batch_class_targets = np.array([patient['class_target']])
+        batch_class_targets = [patient['class_target']]
         # pad data if smaller than patch_size seen during training.
+#         print(data.shape, seg.shape)
         if np.any([data.shape[dim + 1] < ps for dim, ps in enumerate(self.patch_size)]):
             new_shape = [data.shape[0]] + [np.max([data.shape[dim + 1], self.patch_size[dim]]) for dim, ps in enumerate(self.patch_size)]
             data = dutils.pad_nd_image(data, new_shape) # use 'return_slicer' to crop image back to original shape.
             seg = dutils.pad_nd_image(seg, new_shape)
-
+#         print(data.shape, seg.shape)
         # get 3D targets for evaluation, even if network operates in 2D. 2D predictions will be merged to 3D in predictor.
         if self.cf.dim == 3 or self.cf.merge_2D_to_3D_preds:
             out_data = data[np.newaxis]
             out_seg = seg[np.newaxis, np.newaxis]
             out_targets = batch_class_targets
-
+#             print(out_data.shape, out_seg.shape, pid, out_targets)
             batch_3D = {'data': out_data, 'seg': out_seg, 'class_target': out_targets, 'pid': pid}
-            converter = ConvertSegToBoundingBoxCoordinates(dim=3, get_rois_from_seg_flag=False, class_specific_seg_flag=self.cf.class_specific_seg_flag)
+            converter = ConvertSegToBoundingBoxCoordinates(dim=3, get_rois_from_seg_flag=True, class_specific_seg_flag=self.cf.class_specific_seg_flag)
             batch_3D = converter(**batch_3D)
             batch_3D.update({'patient_bb_target': batch_3D['bb_target'],
                                   'patient_roi_labels': batch_3D['roi_labels'],
@@ -364,7 +378,9 @@ class PatientBatchIterator(SlimDataLoaderBase):
         if self.cf.dim == 2:
             out_data = np.transpose(data, axes=(3, 0, 1, 2))  # (z, c, x, y )
             out_seg = np.transpose(seg, axes=(2, 0, 1))[:, np.newaxis]
-            out_targets = np.array(np.repeat(batch_class_targets, out_data.shape[0], axis=0))
+#             out_targets = np.array(np.repeat(batch_class_targets, out_data.shape[0], axis=0))
+            out_targets = [0] * out_data.shape[0]  # I have not idea what's happening here
+    
 
             # if set to not None, add neighbouring slices to each selected slice in channel dimension.
             if self.cf.n_3D_context is not None:
@@ -375,8 +391,8 @@ class PatientBatchIterator(SlimDataLoaderBase):
                         slice_id - self.cf.n_3D_context, slice_id + self.cf.n_3D_context + 1)], axis=0) for slice_id in
                      slice_range])
 
-            batch_2D = {'data': out_data, 'seg': out_seg, 'class_target': out_targets, 'pid': pid}
-            converter = ConvertSegToBoundingBoxCoordinates(dim=2, get_rois_from_seg_flag=False, class_specific_seg_flag=self.cf.class_specific_seg_flag)
+            batch_2D = {'data': out_data, 'seg': out_seg, 'pid': pid, 'class_target': out_targets}
+            converter = ConvertSegToBoundingBoxCoordinates(dim=2, get_rois_from_seg_flag=True, class_specific_seg_flag=self.cf.class_specific_seg_flag)
             batch_2D = converter(**batch_2D)
 
             if self.cf.merge_2D_to_3D_preds:
@@ -415,7 +431,8 @@ class PatientBatchIterator(SlimDataLoaderBase):
 
             data = np.array(new_img_batch) # (n_patches, c, x, y, z)
             seg = np.array(new_seg_batch)[:, np.newaxis]  # (n_patches, 1, x, y, z)
-            batch_class_targets = np.repeat(batch_class_targets, len(patch_crop_coords_list), axis=0)
+#             batch_class_targets = np.repeat(batch_class_targets, len(patch_crop_coords_list), axis=0)
+            batch_class_targets = [0] * len(patch_crop_coords_list)
 
             if self.cf.dim == 2:
                 if self.cf.n_3D_context is not None:
@@ -430,8 +447,8 @@ class PatientBatchIterator(SlimDataLoaderBase):
             patch_batch['patient_bb_target'] = patient_batch['patient_bb_target']
             patch_batch['patient_roi_labels'] = patient_batch['patient_roi_labels']
             patch_batch['original_img_shape'] = patient_batch['original_img_shape']
-
-            converter = ConvertSegToBoundingBoxCoordinates(self.cf.dim, get_rois_from_seg_flag=False, class_specific_seg_flag=self.cf.class_specific_seg_flag)
+#             print("Patient patch : ", data.shape, seg.shape, batch_class_targets, pid)
+            converter = ConvertSegToBoundingBoxCoordinates(self.cf.dim, get_rois_from_seg_flag=True, class_specific_seg_flag=self.cf.class_specific_seg_flag)
             patch_batch = converter(**patch_batch)
             out_batch = patch_batch
 

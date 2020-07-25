@@ -44,12 +44,14 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
 
     seg_preds = results_dict['seg_preds']
     roi_results = deepcopy(results_dict['boxes'])
+#     print(type(roi_results))
+#     print(roi_results[0][0]['box_type'])
 
     # Randomly sampled one patient of batch and project data into 2D slices for plotting.
     if cf.dim == 3:
         patient_ix = np.random.choice(data.shape[0])
-        data = np.transpose(data[patient_ix], axes=(3, 0, 1, 2))
-
+#         print("patient_ix", patient_ix)
+        data = np.transpose(data[patient_ix], axes=(3, 0, 1, 2))  # @rtgunti : (c, x, y, z) to (z, c, x, y)
         # select interesting foreground section to plot.
         gt_boxes = [box['box_coords'] for box in roi_results[patient_ix] if box['box_type'] == 'gt']
         if len(gt_boxes) > 0:
@@ -84,6 +86,8 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
 
 
     show_arrays = np.concatenate([data, segs, seg_preds, data[:, 0][:, None]], axis=1).astype(float)
+#     print("Show Arrays Shape", show_arrays.shape)
+#     print(data.shape, segs.shape, seg_preds.shape, data[:, 0][:, None].shape)
     approx_figshape = (4 * show_arrays.shape[0], 4 * show_arrays.shape[1])
     fig = plt.figure(figsize=approx_figshape)
     gs = gridspec.GridSpec(show_arrays.shape[1] + 1, show_arrays.shape[0])
@@ -95,7 +99,7 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
             ax.axis('off')
             if m < show_arrays.shape[1]:
                 arr = show_arrays[b, m]
-
+#             print(b, m, arr.shape)
             if m < data.shape[1] or m == show_arrays.shape[1] - 1:
                 cmap = 'gray'
                 vmin = None
@@ -106,6 +110,7 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
                 vmax = cf.num_seg_classes - 1
 
             if m == 0:
+#                     plt.title('{}'.format(pids[b]), fontsize = 20)
                 plt.title('{}'.format(pids[b][:10]), fontsize=20)
 
             plt.imshow(arr, cmap=cmap, vmin=vmin, vmax=vmax)
@@ -119,12 +124,13 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
                                 plot_text = True
                                 score = np.max(box['box_score'])
                                 score_text = '{}|{:.0f}'.format(box['box_pred_class_id'], score*100)
-                                # if prob detection: plot only boxes from correct sampling instance.
-                                if 'sample_id' in box.keys() and int(box['sample_id']) != m - data.shape[1] - 2:
-                                        continue
-                                # if prob detection: plot reconstructed boxes only in corresponding line.
-                                if not 'sample_id' in box.keys() and  m != data.shape[1] + 1:
-                                    continue
+                                
+#                                 # if prob detection: plot only boxes from correct sampling instance.
+#                                 if 'sample_id' in box.keys() and int(box['sample_id']) != m - data.shape[1] - 2:
+#                                     continue
+#                                 # if prob detection: plot reconstructed boxes only in corresponding line.
+#                                 if not 'sample_id' in box.keys() and  m != data.shape[1] + 1:
+#                                     continue
 
                                 score_font_size = 7
                                 text_color = 'w'
@@ -169,6 +175,7 @@ class TrainingPlot_2Panel():
         self.do_validation = cf.do_validation
         self.separate_values_dict = cf.assign_values_to_extra_figure
         self.figure_list = []
+        self.starting_epoch = 1
         for n in range(cf.n_monitoring_figures):
             self.figure_list.append(plt.figure(figsize=(10, 6)))
             self.figure_list[-1].ax1 = plt.subplot(111)
@@ -179,18 +186,18 @@ class TrainingPlot_2Panel():
 
         self.figure_list[0].ax1.set_ylim(0, 1.5)
         self.color_palette = ['b', 'c', 'r', 'purple', 'm', 'y', 'k', 'tab:gray']
-
-    def update_and_save(self, metrics, epoch):
+        
+    def update_and_save(self, metrics, starting_epoch, epoch):
 
         for figure_ix in range(len(self.figure_list)):
             fig = self.figure_list[figure_ix]
-            detection_monitoring_plot(fig.ax1, metrics, self.exp_name, self.color_palette, epoch, figure_ix,
+            detection_monitoring_plot(fig.ax1, metrics, starting_epoch, self.exp_name, self.color_palette, epoch, figure_ix,
                                       self.separate_values_dict,
                                       self.do_validation)
             fig.savefig(self.file_name + '_{}'.format(figure_ix))
 
 
-def detection_monitoring_plot(ax1, metrics, exp_name, color_palette, epoch, figure_ix, separate_values_dict, do_validation):
+def detection_monitoring_plot(ax1, metrics, starting_epoch, exp_name, color_palette, epoch, figure_ix, separate_values_dict, do_validation):
 
     monitor_values_keys = metrics['train']['monitor_values'][1][0].keys()
     separate_values = [v for fig_ix in separate_values_dict.values() for v in fig_ix]
@@ -217,7 +224,7 @@ def detection_monitoring_plot(ax1, metrics, exp_name, color_palette, epoch, figu
         if do_validation:
             ax1.plot(x, y_val, label='val_{}'.format(pk), linestyle='-', color=color_palette[kix])
 
-    if epoch == 1:
+    if epoch == starting_epoch:
         box = ax1.get_position()
         ax1.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))

@@ -49,6 +49,7 @@ def get_logger(exp_dir):
 
 def prep_exp(dataset_path, exp_path, server_env, use_stored_settings=True, is_training=True):
     """
+    Args : args.exp_source, args.exp_dir, args.server_env, args.use_stored_settings
     I/O handling, creating of experiment folder structure. Also creates a snapshot of configs/model scripts and copies them to the exp_dir.
     This way the exp_dir contains all info needed to conduct an experiment, independent to changes in actual source code. Thus, training/inference of this experiment can be started at anytime. Therefore, the model script is copied back to the source code dir as tmp_model (tmp_backbone).
     Provides robust structure for cloud deployment.
@@ -89,6 +90,7 @@ def prep_exp(dataset_path, exp_path, server_env, use_stored_settings=True, is_tr
 
         else:
             # run training with source code info and copy snapshot of model to exp_dir for later testing (overwrite scripts if exp_dir already exists.)
+            print(dataset_path)
             cf_file = import_module('cf', os.path.join(dataset_path, 'configs.py'))
             cf = cf_file.configs(server_env)
             subprocess.call('cp {} {}'.format(cf.model_path, os.path.join(exp_path, 'model.py')), shell=True)
@@ -145,6 +147,13 @@ class ModelSelector:
         self.logger = logger
 
     def run_model_selection(self, net, optimizer, monitor_metrics, epoch):
+        
+        state = {
+            'epoch': epoch,
+            'state_dict': net.state_dict(),
+            'optimizer': optimizer.state_dict(),
+        }     
+        
 
         # take the mean over all selection criteria in each epoch
         non_nan_scores = np.mean(np.array([[0 if ii is None else ii for ii in monitor_metrics['val'][sc]] for sc in self.cf.model_selection_criteria]), 0)
@@ -160,8 +169,8 @@ class ModelSelector:
             save_dir = os.path.join(self.cf.fold_dir, '{}_best_checkpoint'.format(epoch))
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
-
-            torch.save(net.state_dict(), os.path.join(save_dir, 'params.pth'))
+            torch.save(state, os.path.join(save_dir, 'params.pth'))
+#             torch.save(net.state_dict(), os.path.join(save_dir, 'params.pth'))
             with open(os.path.join(save_dir, 'monitor_metrics.pickle'), 'wb') as handle:
                 pickle.dump(monitor_metrics, handle)
             # save epoch_ranking to keep info for inference.
@@ -176,11 +185,6 @@ class ModelSelector:
                     subprocess.call('rm -rf {}'.format(os.path.join(self.cf.fold_dir, '{}_best_checkpoint'.format(se))), shell=True)
                     self.logger.info('deleting epoch {} at rank {}'.format(se, np.argwhere(epoch_ranking == se)))
 
-        state = {
-            'epoch': epoch,
-            'state_dict': net.state_dict(),
-            'optimizer': optimizer.state_dict(),
-        }
 
         # save checkpoint of current epoch.
         save_dir = os.path.join(self.cf.fold_dir, 'last_checkpoint'.format(epoch))
@@ -195,15 +199,17 @@ class ModelSelector:
 
 def load_checkpoint(checkpoint_path, net, optimizer):
 
+    print("Checkpoint path is ", checkpoint_path)
     checkpoint_params = torch.load(os.path.join(checkpoint_path, 'params.pth'))
+#     print("*********")
+#     print(checkpoint_params.keys())
+#     print("*********")
     net.load_state_dict(checkpoint_params['state_dict'])
     optimizer.load_state_dict(checkpoint_params['optimizer'])
     with open(os.path.join(checkpoint_path, 'monitor_metrics.pickle'), 'rb') as handle:
         monitor_metrics = pickle.load(handle)
     starting_epoch = checkpoint_params['epoch'] + 1
     return starting_epoch, monitor_metrics
-
-
 
 def prepare_monitoring(cf):
     """
