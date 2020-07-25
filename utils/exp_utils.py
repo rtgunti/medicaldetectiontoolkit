@@ -90,6 +90,7 @@ def prep_exp(dataset_path, exp_path, server_env, use_stored_settings=True, is_tr
 
         else:
             # run training with source code info and copy snapshot of model to exp_dir for later testing (overwrite scripts if exp_dir already exists.)
+            print(dataset_path)
             cf_file = import_module('cf', os.path.join(dataset_path, 'configs.py'))
             cf = cf_file.configs(server_env)
             subprocess.call('cp {} {}'.format(cf.model_path, os.path.join(exp_path, 'model.py')), shell=True)
