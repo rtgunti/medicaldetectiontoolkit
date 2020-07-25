@@ -46,6 +46,7 @@ class DefaultConfigs:
         #########################
 
         #random seed for fold_generator and batch_generator.
+#         self.seed = None
         self.seed = 0
 
         #number of threads for multithreaded batch generation.
@@ -94,8 +95,13 @@ class DefaultConfigs:
         self.ensemble_folds = False
 
         # color specifications for all box_types in prediction_plot.
-        self.box_color_palette = {'det': 'b', 'gt': 'r', 'neg_class': 'purple',
-                                  'prop': 'w', 'pos_class': 'g', 'pos_anchor': 'c', 'neg_anchor': 'c'}
+        self.box_color_palette = {'det': 'blue', 
+                                  'gt': 'red', 
+                                  'prop': 'white', 
+                                  'pos_class': 'yellow',
+                                  'neg_class': 'purple',        
+                                  'pos_anchor': 'green', 
+                                  'neg_anchor': 'orange'}
 
         # scan over confidence score in evaluation to optimize it on the validation set.
         self.scan_det_thresh = False
@@ -132,6 +138,7 @@ class DefaultConfigs:
         self.return_masks_in_test = False # needed if doing instance segmentation. evaluation not yet implemented.
 
         # add P6 to Feature Pyramid Network.
+#         self.sixth_pooling = True
         self.sixth_pooling = False
 
         # for probabilistic detection

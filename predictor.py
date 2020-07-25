@@ -140,21 +140,21 @@ class Predictor:
         for rank_ix, weight_path in enumerate(weight_paths):
 
             self.logger.info(('tmp ensembling over rank_ix:{} epoch:{}'.format(rank_ix, weight_path)))
-            self.net.load_state_dict(torch.load(weight_path))
+            self.net.load_state_dict(torch.load(weight_path)['state_dict'])
             self.net.eval()
             self.rank_ix = str(rank_ix)  # get string of current rank for unique patch ids.
-
+#             print((batch_gen['n_test']))
             with torch.no_grad():
                 for _ in range(batch_gen['n_test']):
 
                     batch = next(batch_gen['test'])
-
+#                     print(batch.keys())
                     # store batch info in patient entry of results dict.
                     if rank_ix == 0:
                         dict_of_patient_results[batch['pid']] = {}
                         dict_of_patient_results[batch['pid']]['results_list'] = []
                         dict_of_patient_results[batch['pid']]['patient_bb_target'] = batch['patient_bb_target']
-                        dict_of_patient_results[batch['pid']]['patient_roi_labels'] = batch['patient_roi_labels']
+                        dict_of_patient_results[batch['pid']]['patient_roi_labels'] = batch['patient_roi_labels']                    
 
                     # call prediction pipeline and store results in dict.
                     results_dict = self.predict_patient(batch)
