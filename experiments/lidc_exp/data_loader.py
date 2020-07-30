@@ -58,7 +58,7 @@ def get_train_generators(cf, logger):
         with open(os.path.join(cf.exp_dir, 'fold_ids.pickle'), 'rb') as handle:
             fg = pickle.load(handle)
 
-    train_ix, val_ix, test_ix, _ = fg[cf.fold]
+    train_ix, val_ix, test_ix, _ = fg[cf.fold] 
     print("Split : ", len(train_ix), len(val_ix), len(test_ix))
 
     train_pids = [all_pids_list[ix] for ix in train_ix]
@@ -149,8 +149,9 @@ def load_dataset(cf, logger, subset_ixs=None, pp_data_path=None, pp_name=None):
         p_df = p_df[p_df.pid.isin(prototype_pids)]
         logger.warning('WARNING: using prototyping data subset!!!')
 
-    if subset_ixs is not None:
-        subset_pids = [np.unique(p_df.pid.tolist())[ix] for ix in subset_ixs]
+    if cf.subset_ixs is not None:
+        
+        subset_pids = [np.unique(p_df.pid.tolist())[ix] for ix in cf.subset_ixs]
         p_df = p_df[p_df.pid.isin(subset_pids)]
         logger.info('subset: selected {} instances from df'.format(len(p_df)))
 
@@ -459,15 +460,16 @@ class PatientBatchIterator(SlimDataLoaderBase):
         return out_batch
 
 
-
 def copy_and_unpack_data(logger, pids, fold_dir, source_dir, target_dir):
 
 
     start_time = time.time()
     with open(os.path.join(fold_dir, 'file_list.txt'), 'w') as handle:
         for pid in pids:
-            handle.write('{}_img.npz\n'.format(pid))
-            handle.write('{}_rois.npz\n'.format(pid))
+#             handle.write('{}_img.npz\n'.format(pid))
+#             handle.write('{}_rois.npz\n'.format(pid))
+            handle.write('{}_img.npy\n'.format(pid))
+            handle.write('{}_rois.npy\n'.format(pid))
 
     subprocess.call('rsync -av --files-from {} {} {}'.format(os.path.join(fold_dir, 'file_list.txt'),
         source_dir, target_dir), shell=True)

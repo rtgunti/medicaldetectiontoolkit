@@ -100,8 +100,11 @@ class net(nn.Module):
         var_img = torch.FloatTensor(img).cuda()
         var_seg = torch.FloatTensor(seg).cuda().long()
         var_seg_ohe = torch.FloatTensor(mutils.get_one_hot_encoding(seg, self.cf.num_seg_classes)).cuda()
+#         print(img.shape, seg.shape)
+#         print(var_img.shape, var_seg.shape, var_seg_ohe.shape)
         results_dict = {}
         seg_logits, box_coords, max_scores = self.forward(var_img)
+#         print(seg_logits.shape, len(box_coords), len(max_scores))
 
         results_dict['boxes'] = [[] for _ in range(img.shape[0])]
         for cix in range(len(self.cf.class_dict.keys())):
@@ -124,14 +127,15 @@ class net(nn.Module):
         loss = torch.FloatTensor([0]).cuda()
         loss_str = ""
         results_dict['monitor_values'] = dict()
+        results_dict['monitor_values']['loss'] = loss.item()
         if self.cf.seg_loss_mode == 'dice' or self.cf.seg_loss_mode == 'dice_wce':
-            batch_dice_loss = 1 - mutils.batch_dice(F.softmax(seg_logits, dim=1), var_seg_ohe,
+            dice_loss = 1 - mutils.batch_dice(F.softmax(seg_logits, dim=1), var_seg_ohe,
                                           false_positive_weight=float(self.cf.fp_dice_weight))
 #             loss += 1 - mutils.batch_dice(F.softmax(seg_logits, dim=1), var_seg_ohe,
 #                                           false_positive_weight=float(self.cf.fp_dice_weight))
-            loss += batch_dice_loss
-            loss_str += "batch_dice_loss: " + str(round(batch_dice_loss.item(),3)) + " "
-            results_dict['monitor_values']['batch_dice_loss'] = batch_dice_loss.item()
+            loss += dice_loss
+            loss_str += "dice_loss: " + str(round(dice_loss.item(),3)) + " "
+            results_dict['monitor_values']['dice_loss'] = dice_loss.item()
 
         if self.cf.seg_loss_mode == 'wce' or self.cf.seg_loss_mode == 'dice_wce':
             ce_loss = F.cross_entropy(seg_logits, var_seg[:, 0], weight=torch.tensor(self.cf.wce_weights).float().cuda())

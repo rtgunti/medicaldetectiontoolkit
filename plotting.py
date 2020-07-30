@@ -22,7 +22,6 @@ import numpy as np
 import os
 from copy import deepcopy
 
-
 def plot_batch_prediction(batch, results_dict, cf, outfile= None):
     """
     plot the input images, ground truth annotations, and output predictions of a batch. If 3D batch, plots a 2D projection
@@ -209,7 +208,7 @@ def detection_monitoring_plot(ax1, metrics, starting_epoch, exp_name, color_pale
 
 
     x = np.arange(1, epoch + 1)
-
+    agg_vals = ""
     for kix, pk in enumerate(plot_keys):
         if pk in metrics['train'].keys():
             y_train = metrics['train'][pk][1:]
@@ -221,9 +220,14 @@ def detection_monitoring_plot(ax1, metrics, starting_epoch, exp_name, color_pale
                 y_val = [np.mean([er[pk] for er in metrics['val']['monitor_values'][e]]) for e in x]
 
         ax1.plot(x, y_train, label='train_{}'.format(pk), linestyle='--', color=color_palette[kix])
+#         agg_vals += " train_" + pk + " : " + str(np.round(y_train[-1], 3))
+#         agg_vals += " train_" + pk + " : " + str(y_train[-1])
         if do_validation:
             ax1.plot(x, y_val, label='val_{}'.format(pk), linestyle='-', color=color_palette[kix])
-
+#             agg_vals += " val_" + pk + " : " + str(np.round(y_val[-1], 3))
+            
+            
+#     print("Agg Vals :", agg_vals)
     if epoch == starting_epoch:
         box = ax1.get_position()
         ax1.set_position([box.x0, box.y0, box.width * 0.8, box.height])

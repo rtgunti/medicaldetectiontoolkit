@@ -14,7 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""execution script. Test push"""
+"""execution script."""
 
 import argparse
 import os
@@ -105,19 +105,21 @@ def train(logger):
 
                 _, monitor_metrics['val'] = val_evaluator.evaluate_predictions(val_results_list, monitor_metrics['val'])
                 model_selector.run_model_selection(net, optimizer, monitor_metrics, epoch)
+                #######
 #             logger.info('train_loss : {0} train_dice_score : {1} train_dice_ap : {2} val_loss : {3} val_dice_score : {4} val_dice_ap : {5}'\
 #                         .format(monitor_metrics['train']['monitor_values'][epoch]))
 #             train_metrics = monitor_metrics['train']['monitor_values'][epoch]
 #             val_metrics = monitor_metrics['val']['monitor_values'][epoch]
 #             logger.info('train_loss : {0}'
 #                         .format(monitor_metrics['train']['monitor_values'][epoch]['loss']))
-
+                #######
             # update monitoring and prediction plots
             TrainingPlot.update_and_save(monitor_metrics, starting_epoch, epoch)
             epoch_time = time.time() - start_time
             logger.info('trained epoch {0:}: took {1:.2f} sec. ({2:.2f} train / {3:.2f} val)'.format(
                 epoch, epoch_time, train_time, epoch_time-train_time))
-            batch = next(batch_gen['val_sampling'])
+#             batch = next(batch_gen['val_sampling'])
+            batch = next(batch_gen['train'])
             results_dict = net.train_forward(batch, is_validation=True)
             logger.info('plotting predictions from validation sampling.')
             plot_batch_prediction(batch, results_dict, cf)
@@ -175,7 +177,9 @@ if __name__ == '__main__':
             cf.test_n_epochs =  cf.save_n_models
             cf.max_test_patients = 1
 
-        cf.data_dest = args.data_dest
+        if args.data_dest:
+            cf.data_dest = args.data_dest
+        
         model = utils.import_module('model', cf.model_path)
         data_loader = utils.import_module('dl', os.path.join(args.exp_source, 'data_loader.py'))
         if folds is None:

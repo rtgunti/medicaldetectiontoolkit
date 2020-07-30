@@ -834,8 +834,8 @@ def sum_tensor(input, axes, keepdim=False):
 def batch_dice(pred, y, false_positive_weight=1.0, smooth=1e-6):
     '''
     compute soft dice over batch. this is a differentiable score and can be used as a loss function.
-    only dice scores of foreground classes are returned, since training typically
-    does not benefit from explicit background optimization. Pixels of the entire batch are considered a pseudo-volume to compute dice scores of.
+    only dice scores of foreground classes are returned, since training typically does not benefit from explicit background
+    optimization. Pixels of the entire batch are considered a pseudo-volume to compute dice scores of.
     This way, single patches with missing foreground classes can not produce faulty gradients.
     :param pred: (b, c, y, x, (z)), softmax probabilities (network output). (c==classes)
     :param y: (b, c, y, x, (z)), one-hot-encoded segmentation mask.

@@ -33,6 +33,12 @@ class configs(DefaultConfigs):
         self.raw_seg_dir = '{}/data_raw/seg/'.format(self.root_dir)
         self.pp_dir = '{}/data_pp'.format(self.root_dir)
         self.target_spacing = (1.0, 1.0, 2.25)
+        
+        if server_env:
+            self.root_dir = "/content/drive/My\' \'Drive/Thesis/Thesis/"
+            self.raw_data_dir = '{}/Dataset/data/'.format(self.root_dir)
+            self.raw_seg_dir = '{}/Dataset/seg/'.format(self.root_dir)
+            self.pp_dir = '{}/data_pp'.format(self.root_dir)
 
         #########################
         #         I/O           #
@@ -43,12 +49,13 @@ class configs(DefaultConfigs):
         self.dim = 3
 
         # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
-        self.model = 'detection_unet'
+        self.model = 'retina_net'
         
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
         # int [0 < dataset_size]. select n patients from dataset for prototyping. If None, all data is used.
         self.select_prototype_subset = None
+        self.subset_ixs = None
         self.hold_out_test_set = None
 
         # path to preprocessed data.
@@ -62,9 +69,10 @@ class configs(DefaultConfigs):
         # settings for deployment in cloud.
         if server_env:
             # path to preprocessed data.
-            self.pp_name = 'lidc_mdt_npz'
+#             self.pp_name = 'lidc_mdt_npz'
             self.crop_name = 'pp_fg_slices_packed'
-            self.pp_data_path = '/datasets/datasets_ramien/lidc_exp/data/{}'.format(self.pp_name)
+#             self.pp_data_path = '/datasets/datasets_ramien/lidc_exp/data/{}'.format(self.pp_name)
+            self.data_dest = '/content/'
             self.pp_test_data_path = self.pp_data_path
             self.select_prototype_subset = None
 
@@ -79,7 +87,7 @@ class configs(DefaultConfigs):
         # patch_size to be used for training. pre_crop_size is the patch_size before data augmentation.
         self.pre_crop_size_2D = [256, 256]
         self.patch_size_2D = [224, 224] 
-        self.use_big_patch = 1
+        self.use_big_patch = 0
         if(self.use_big_patch):
             self.pre_crop_size_3D = [256, 256, 112]
             self.patch_size_3D = [224, 224, 96]               
@@ -106,10 +114,10 @@ class configs(DefaultConfigs):
         #      Architecture      #
         #########################
 
-        self.start_filts = 48 if self.dim == 2 else 32
+        self.start_filts = 48 if self.dim == 2 else 48
         self.end_filts = self.start_filts * 4 if self.dim == 2 else self.start_filts * 2
-        self.res_architecture = 'resnet50' # 'resnet101' , 'resnet50'
-        self.norm = 'batch_norm' # one of None, 'instance_norm', 'batch_norm'
+        self.res_architecture = 'resnet101' # 'resnet101' , 'resnet50'
+        self.norm = None # one of None, 'instance_norm', 'batch_norm'
         self.weight_decay = 0 ## 
 
         # one of 'xavier_uniform', 'xavier_normal', or 'kaiming_normal', None (=default = 'kaiming_uniform')
@@ -148,7 +156,7 @@ class configs(DefaultConfigs):
         self.class_dict = {1: 'lesion'}  # 0 is background.
 #         self.patient_class_of_interest = 2  # patient metrics are only plotted for one class.
         self.patient_class_of_interest = 1
-        self.ap_match_ious = [0.1, 0.5]  # list of ious to be evaluated for ap-scoring.
+        self.ap_match_ious = [0.1]  # list of ious to be evaluated for ap-scoring.
 
 #         self.model_selection_criteria = ['malignant_ap', 'benign_ap'] # criteria to average over for saving epochs.
         self.model_selection_criteria = ['lesion_ap']
@@ -160,7 +168,7 @@ class configs(DefaultConfigs):
         self.wcs_iou = 1e-5
 
         self.plot_prediction_histograms = True
-        self.plot_stat_curves = True
+        self.plot_stat_curves = False
 
         #########################
         #   Data Augmentation   #
@@ -206,7 +214,7 @@ class configs(DefaultConfigs):
     def add_det_unet_configs(self):
         
         # learning rate is a list with one entry per epoch.
-        self.learning_rate = [1e-4] * self.num_epochs
+        self.learning_rate = [1e-5] * self.num_epochs
 
         # aggregation from pixel perdiction to object scores (connected component). One of ['max', 'median']
         self.aggregation_operation = 'max'
@@ -215,7 +223,7 @@ class configs(DefaultConfigs):
         self.n_roi_candidates = 10 if self.dim == 2 else 30
 
         # loss mode: either weighted cross entropy ('wce'), batch-wise dice loss ('dice'), or the sum of both ('dice_wce')
-        self.seg_loss_mode = 'dice'
+        self.seg_loss_mode = 'dice_wce'
 
         # if <1, false positive predictions in foreground are penalized less.
         self.fp_dice_weight = 1 if self.dim == 2 else 1

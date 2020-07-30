@@ -110,13 +110,16 @@ def aggregate_meta_info(exp_dir):
 
 if __name__ == "__main__":
 
-    paths = [p for p in zip(os.listdir(cf.raw_data_dir),os.listdir(cf.raw_seg_dir)) if 'pre' in p[0]]
+    data_paths = sorted([path for path in os.listdir(cf.raw_data_dir) if 'pre' in path])
+    seg_paths = sorted([path for path in os.listdir(cf.raw_seg_dir) if 'pre' in path])
+    paths = [p for p in zip(data_paths, seg_paths)]
+#     paths = [p for p in zip(os.listdir(cf.raw_data_dir),os.listdir(cf.raw_seg_dir)) if 'pre' in p[0]]
 #     paths = paths[:4]
 
     if not os.path.exists(cf.pp_dir):
         os.mkdir(cf.pp_dir)
 
-    pool = Pool(processes=1)
+    pool = Pool(processes=8)
     p1 = pool.map(pp_patient, enumerate(paths), chunksize=1)
     pool.close()
     pool.join()

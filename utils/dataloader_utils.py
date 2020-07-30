@@ -138,8 +138,8 @@ class fold_generator:
 
         return names_list
 
-
-
+    
+    
 def get_patch_crop_coords(img, patch_size, min_overlap=30):
     """
 
