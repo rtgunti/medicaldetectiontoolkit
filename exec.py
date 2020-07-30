@@ -124,6 +124,11 @@ def train(logger):
             logger.info('plotting predictions from validation sampling.')
             plot_batch_prediction(batch, results_dict, cf)
 
+        #Additional Info when using cuda
+        if device.type == 'cuda':
+            print('Memory Usage:')
+            print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
+            print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
 
 def test(logger):
     """
@@ -164,7 +169,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     folds = args.folds
     resume_to_checkpoint = args.resume_to_checkpoint
-
+    
+    # setting device on GPU if available, else CPU
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Using device:', device)
+    if device.type == 'cuda' : print(torch.cuda.get_device_name(0))
+    
     if args.mode == 'train' or args.mode == 'train_test':
 
         cf = utils.prep_exp(args.exp_source, args.exp_dir, args.server_env, args.use_stored_settings)
@@ -172,7 +182,7 @@ if __name__ == '__main__':
             folds = [0]
             cf.n_workers = 1
             cf.select_prototype_subset = 10
-            cf.batch_size, cf.num_epochs, cf.min_save_thresh, cf.save_n_models = 3 if cf.dim==2 else 2, 10, 0, 2
+            cf.batch_size, cf.num_epochs, cf.min_save_thresh, cf.save_n_models = 3 if cf.dim==2 else 2, 2, 0, 2
             cf.num_train_batches, cf.num_val_batches, cf.max_val_patients = 2, 2, 2
             cf.test_n_epochs =  cf.save_n_models
             cf.max_test_patients = 1
