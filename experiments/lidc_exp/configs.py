@@ -49,13 +49,13 @@ class configs(DefaultConfigs):
         self.dim = 3
 
         # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
-        self.model = 'retina_net'
+        self.model = 'detection_unet'
         
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
         # int [0 < dataset_size]. select n patients from dataset for prototyping. If None, all data is used.
         self.select_prototype_subset = None
-        self.subset_ixs = None
+        self.subset_ixs = [6, 7]
         self.hold_out_test_set = None
 
         # path to preprocessed data.
@@ -116,7 +116,7 @@ class configs(DefaultConfigs):
 
         self.start_filts = 48 if self.dim == 2 else 48
         self.end_filts = self.start_filts * 4 if self.dim == 2 else self.start_filts * 2
-        self.res_architecture = 'resnet101' # 'resnet101' , 'resnet50'
+        self.res_architecture = 'resnet50' # 'resnet101' , 'resnet50'
         self.norm = None # one of None, 'instance_norm', 'batch_norm'
         self.weight_decay = 0 ## 
 
@@ -182,7 +182,7 @@ class configs(DefaultConfigs):
         'angle_x': (0., 0. * np.pi),
         'angle_y': (0., 0),
         'angle_z': (0., 0),
-        'do_scale': True,
+        'do_scale': False,
         'scale':(0.8, 1.1),
         'random_crop':True,
         'rand_crop_dist':  (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3),
@@ -223,7 +223,7 @@ class configs(DefaultConfigs):
         self.n_roi_candidates = 10 if self.dim == 2 else 30
 
         # loss mode: either weighted cross entropy ('wce'), batch-wise dice loss ('dice'), or the sum of both ('dice_wce')
-        self.seg_loss_mode = 'dice_wce'
+        self.seg_loss_mode = 'dice'
 
         # if <1, false positive predictions in foreground are penalized less.
         self.fp_dice_weight = 1 if self.dim == 2 else 1
