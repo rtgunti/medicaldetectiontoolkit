@@ -310,6 +310,8 @@ def generate_pyramid_anchors(logger, cf):
             level,level+2,anchors[-1].shape, expected_anchors[lix], np.concatenate(anchors).shape, np.sum(expected_anchors)))
 #         print(anchors[-1][len(anchors[-1])//2])
     out_anchors = np.concatenate(anchors, axis=0)
+    print("Out anchors shape : ", out_anchors.shape)
+    print(out_anchors[0])
     return out_anchors
 
 

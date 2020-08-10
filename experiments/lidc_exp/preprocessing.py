@@ -60,10 +60,10 @@ def pp_patient(inputs):
     img_arr = img.get_fdata()
     mask_arr = mask.get_fdata()
     
-#     # (x, y, z) to (z, y, x)
+#     # (x, y, z) to (z, x, y)
 #     print(img_arr.shape)
-#     img_arr = np.transpose(img_arr, axes=(2, 1, 0))
-#     mask_arr = np.transpose(mask_arr, axes = (2, 1, 0))
+#     img_arr = np.transpose(img_arr, axes=(2, 0, 1))
+#     mask_arr = np.transpose(mask_arr, axes = (2, 0, 1))
 #     print(img_arr.shape)
     
     img_arr = np.rot90(img_arr)

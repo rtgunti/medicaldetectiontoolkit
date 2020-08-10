@@ -27,8 +27,12 @@ class configs(DefaultConfigs):
         #########################
         #    Preprocessing      #
         #########################
-
-        self.root_dir = '/home/jupyter-rgunti/data/Thesis'
+        
+        self.data =["Thesis", "LiTS", "LIDC"]
+#         self.data = "LiTS"
+#         self.data = "LIDC"
+        
+        self.root_dir = '/home/jupyter-rgunti/data/{}'.format(self.data[0])
         self.raw_data_dir = '{}/data_raw/data/'.format(self.root_dir)
         self.raw_seg_dir = '{}/data_raw/seg/'.format(self.root_dir)
         self.pp_dir = '{}/data_pp'.format(self.root_dir)
@@ -49,13 +53,13 @@ class configs(DefaultConfigs):
         self.dim = 3
 
         # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
-        self.model = 'detection_unet'
+        self.model = 'retina_net'
         
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
         # int [0 < dataset_size]. select n patients from dataset for prototyping. If None, all data is used.
         self.select_prototype_subset = None
-        self.subset_ixs = [6, 7]
+        self.subset_ixs = None
         self.hold_out_test_set = None
 
         # path to preprocessed data.
@@ -87,7 +91,7 @@ class configs(DefaultConfigs):
         # patch_size to be used for training. pre_crop_size is the patch_size before data augmentation.
         self.pre_crop_size_2D = [256, 256]
         self.patch_size_2D = [224, 224] 
-        self.use_big_patch = 0
+        self.use_big_patch = 1
         if(self.use_big_patch):
             self.pre_crop_size_3D = [256, 256, 112]
             self.patch_size_3D = [224, 224, 96]               
@@ -127,9 +131,9 @@ class configs(DefaultConfigs):
         #  Schedule / Selection #
         #########################
 
-        self.num_epochs = 600
-        self.num_train_batches = 200 if self.dim == 2 else 50
-        self.batch_size = 20 if self.dim == 2 else 1 if self.use_big_patch else 4
+        self.num_epochs = 400
+        self.num_train_batches = 50 if self.dim == 2 else 50
+        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 4
 
         self.do_validation = True if self.select_prototype_subset is None else False
         # decide whether to validate on entire patient volumes (like testing) or sampled patches (like training)

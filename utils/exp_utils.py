@@ -90,7 +90,6 @@ def prep_exp(dataset_path, exp_path, server_env, use_stored_settings=True, is_tr
 
         else:
             # run training with source code info and copy snapshot of model to exp_dir for later testing (overwrite scripts if exp_dir already exists.)
-            print(dataset_path)
             cf_file = import_module('cf', os.path.join(dataset_path, 'configs.py'))
             cf = cf_file.configs(server_env)
             subprocess.call('cp {} {}'.format(cf.model_path, os.path.join(exp_path, 'model.py')), shell=True)
@@ -197,18 +196,23 @@ class ModelSelector:
 
 
 
-def load_checkpoint(checkpoint_path, net, optimizer):
+def load_checkpoint(checkpoint_path, net, optimizer, cf):
+    
+    ####Tweak something here to extend the training
 
     print("Checkpoint path is ", checkpoint_path)
     checkpoint_params = torch.load(os.path.join(checkpoint_path, 'params.pth'))
-#     print("*********")
-#     print(checkpoint_params.keys())
-#     print("*********")
     net.load_state_dict(checkpoint_params['state_dict'])
     optimizer.load_state_dict(checkpoint_params['optimizer'])
     with open(os.path.join(checkpoint_path, 'monitor_metrics.pickle'), 'rb') as handle:
         monitor_metrics = pickle.load(handle)
     starting_epoch = checkpoint_params['epoch'] + 1
+#     print("Knock Knock : ", cf.num_epochs, len(monitor_metrics['train']['monitor_values']))
+    if cf.num_epochs > len(monitor_metrics['train']['monitor_values']):
+        print("Extending training for additional epochs")
+        monitor_metrics['train']['monitor_values'].extend([[] for _ in range(starting_epoch, cf.num_epochs + 1)])
+        monitor_metrics['val']['monitor_values'].extend([[] for _ in range(starting_epoch, cf.num_epochs + 1)])
+        print("New monitor_metrics lengths : ", len(monitor_metrics['train']['monitor_values']))
     return starting_epoch, monitor_metrics
 
 def prepare_monitoring(cf):

@@ -47,10 +47,11 @@ def train(logger):
 
     # prepare monitoring
     monitor_metrics, TrainingPlot = utils.prepare_monitoring(cf)
-
+    print("length of monitor_metrics is ", len(monitor_metrics['train']['monitor_values']))
+        
     if cf.resume_to_checkpoint:
         path_to_checkpoint = os.path.join(cf.exp_dir, ("fold_" + str(cf.fold)), cf.resume_to_checkpoint)
-        starting_epoch, monitor_metrics = utils.load_checkpoint(path_to_checkpoint, net, optimizer)
+        starting_epoch, monitor_metrics = utils.load_checkpoint(path_to_checkpoint, net, optimizer, cf)
         logger.info('resumed to checkpoint {} at epoch {}'.format(cf.resume_to_checkpoint, starting_epoch))
 
     logger.info('loading dataset and initializing batch generators...')
@@ -118,17 +119,17 @@ def train(logger):
             epoch_time = time.time() - start_time
             logger.info('trained epoch {0:}: took {1:.2f} sec. ({2:.2f} train / {3:.2f} val)'.format(
                 epoch, epoch_time, train_time, epoch_time-train_time))
-#             batch = next(batch_gen['val_sampling'])
-            batch = next(batch_gen['train'])
+            batch = next(batch_gen['val_sampling'])
+#             batch = next(batch_gen['train'])
             results_dict = net.train_forward(batch, is_validation=True)
             logger.info('plotting predictions from validation sampling.')
             plot_batch_prediction(batch, results_dict, cf)
 
-        #Additional Info when using cuda
-        if device.type == 'cuda':
-            print('Memory Usage:')
-            print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
-            print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
+#         #Additional Info when using cuda
+#         if device.type == 'cuda':
+#             print('Memory Usage:')
+#             print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
+#             print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
 
 def test(logger):
     """
@@ -182,7 +183,7 @@ if __name__ == '__main__':
             folds = [0]
             cf.n_workers = 1
             cf.select_prototype_subset = 10
-            cf.batch_size, cf.num_epochs, cf.min_save_thresh, cf.save_n_models = 3 if cf.dim==2 else 2, 2, 0, 2
+            cf.batch_size, cf.num_epochs, cf.min_save_thresh, cf.save_n_models = 3 if cf.dim==2 else 1, 2, 0, 2
             cf.num_train_batches, cf.num_val_batches, cf.max_val_patients = 2, 2, 2
             cf.test_n_epochs =  cf.save_n_models
             cf.max_test_patients = 1
