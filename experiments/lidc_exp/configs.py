@@ -29,8 +29,6 @@ class configs(DefaultConfigs):
         #########################
         
         self.data =["Thesis", "LiTS", "LIDC"]
-#         self.data = "LiTS"
-#         self.data = "LIDC"
         
         self.root_dir = '/home/jupyter-rgunti/data/{}'.format(self.data[0])
         self.raw_data_dir = '{}/data_raw/data/'.format(self.root_dir)
@@ -91,10 +89,10 @@ class configs(DefaultConfigs):
         # patch_size to be used for training. pre_crop_size is the patch_size before data augmentation.
         self.pre_crop_size_2D = [256, 256]
         self.patch_size_2D = [224, 224] 
-        self.use_big_patch = 1
+        self.use_big_patch = 0
         if(self.use_big_patch):
             self.pre_crop_size_3D = [256, 256, 112]
-            self.patch_size_3D = [224, 224, 96]               
+            self.patch_size_3D = [224, 224, 96] 
         else:
             self.pre_crop_size_3D = [156, 156, 96]
             self.patch_size_3D = [128, 128, 64]
@@ -103,6 +101,7 @@ class configs(DefaultConfigs):
         
         # ratio of free sampled batch elements before class balancing is triggered
         # (>0 to include "empty"/background patches.)
+#         self.batch_sample_slack = 0.2
         self.batch_sample_slack = 0.5 if self.dim == 2 else 1.0
 
         # set 2D network to operate in 3D images.
@@ -121,7 +120,7 @@ class configs(DefaultConfigs):
         self.start_filts = 48 if self.dim == 2 else 48
         self.end_filts = self.start_filts * 4 if self.dim == 2 else self.start_filts * 2
         self.res_architecture = 'resnet50' # 'resnet101' , 'resnet50'
-        self.norm = None # one of None, 'instance_norm', 'batch_norm'
+        self.norm = 'batch_norm' # one of None, 'instance_norm', 'batch_norm'
         self.weight_decay = 0 ## 
 
         # one of 'xavier_uniform', 'xavier_normal', or 'kaiming_normal', None (=default = 'kaiming_uniform')
@@ -131,9 +130,9 @@ class configs(DefaultConfigs):
         #  Schedule / Selection #
         #########################
 
-        self.num_epochs = 400
+        self.num_epochs = 600
         self.num_train_batches = 50 if self.dim == 2 else 50
-        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 4
+        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 8
 
         self.do_validation = True if self.select_prototype_subset is None else False
         # decide whether to validate on entire patient volumes (like testing) or sampled patches (like training)
@@ -182,7 +181,7 @@ class configs(DefaultConfigs):
         'do_elastic_deform': True,
         'alpha':(0., 1500.),
         'sigma':(30., 50.),
-        'do_rotation':True,
+        'do_rotation':False,
         'angle_x': (0., 0. * np.pi),
         'angle_y': (0., 0),
         'angle_z': (0., 0),
@@ -238,8 +237,7 @@ class configs(DefaultConfigs):
 
         # if 'True', loss distinguishes all classes, else only foreground vs. background (class agnostic).
 #         self.class_specific_seg_flag = True
-        self.class_specific_seg_flag = False
-        self.num_seg_classes = 3 if self.class_specific_seg_flag else 2
+        self.num_seg_classes = 2
         self.head_classes = self.num_seg_classes
 
     def add_mrcnn_configs(self):
@@ -279,7 +277,6 @@ class configs(DefaultConfigs):
 
         # number of feature maps in rpn. typically lowered in 3D to save gpu-memory.
         self.n_rpn_features = 512 if self.dim == 2 else 128
-#         self.n_rpn_features = 512 if self.dim == 2 else 256
 
         # anchor ratios and strides per position in feature maps.
         self.rpn_anchor_ratios = [0.5, 1, 2]
@@ -342,9 +339,7 @@ class configs(DefaultConfigs):
             
         if self.model == 'ufrcnn':
             self.operate_stride1 = True
-#           self.class_specific_seg_flag = True
-            self.class_specific_seg_flag = False
-            self.num_seg_classes = 3 if self.class_specific_seg_flag else 2
+            self.num_seg_classes = 2
             self.frcnn_mode = True
 
         if self.model == 'retina_net' or self.model == 'retina_unet' or self.model == 'prob_detector':
@@ -364,9 +359,7 @@ class configs(DefaultConfigs):
             self.anchor_matching_iou = 0.5
 
             # if 'True', seg loss distinguishes all classes, else only foreground vs. background (class agnostic).
-#           self.class_specific_seg_flag = True
-            self.class_specific_seg_flag = False
-            self.num_seg_classes = 3 if self.class_specific_seg_flag else 2
+            self.num_seg_classes = 2
 
             if self.model == 'retina_unet':
                 self.operate_stride1 = True

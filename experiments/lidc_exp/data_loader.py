@@ -225,7 +225,6 @@ class BatchGenerator(SlimDataLoaderBase):
         self.cf = cf
         self.crop_margin = np.array(self.cf.patch_size)/8. #min distance of ROI center to edge of cropped_patch.
         self.p_fg = 0.5
-#         self.p_fg = 0.8
 
     def generate_train_batch(self):
 
@@ -238,7 +237,7 @@ class BatchGenerator(SlimDataLoaderBase):
                 class_targets_list, self.batch_size, self.cf.head_classes - 1, slack_factor=self.cf.batch_sample_slack)
         else:
             batch_ixs = np.random.choice(len(class_targets_list), self.batch_size)
-
+#         print("Batch IXs are : ", batch_ixs)
         patients = list(self._data.items())
 
         for b in batch_ixs:
@@ -286,6 +285,7 @@ class BatchGenerator(SlimDataLoaderBase):
                 # with p_fg: sample random pixel from random ROI and shift center by random value.
                 if fg_prob_sample < self.p_fg and np.sum(seg) > 0:
                     seg_ixs = np.argwhere(seg == np.random.choice(np.unique(seg)[1:], 1))
+#                     print("Seg_ixs :",seg_ixs.shape)
                     roi_anchor_pixel = seg_ixs[np.random.choice(seg_ixs.shape[0], 1)][0]
                     assert seg[tuple(roi_anchor_pixel)] > 0
 #                     print(b, seg_ixs.shape, len(seg_ixs),roi_anchor_pixel, "Selecting random center pixel from lesion")

@@ -182,7 +182,7 @@ if __name__ == '__main__':
         if args.dev:
             folds = [0]
             cf.n_workers = 1
-            cf.select_prototype_subset = 10
+            cf.select_prototype_subset = 2
             cf.batch_size, cf.num_epochs, cf.min_save_thresh, cf.save_n_models = 3 if cf.dim==2 else 1, 2, 0, 2
             cf.num_train_batches, cf.num_val_batches, cf.max_val_patients = 2, 2, 2
             cf.test_n_epochs =  cf.save_n_models
