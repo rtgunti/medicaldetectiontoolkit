@@ -51,7 +51,7 @@ class configs(DefaultConfigs):
         self.dim = 3
 
         # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
-        self.model = 'retina_net'
+        self.model = 'detection_unet'
         
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
@@ -117,7 +117,7 @@ class configs(DefaultConfigs):
         #      Architecture      #
         #########################
 
-        self.start_filts = 48 if self.dim == 2 else 48
+        self.start_filts = 48 if self.dim == 2 else 32
         self.end_filts = self.start_filts * 4 if self.dim == 2 else self.start_filts * 2
         self.res_architecture = 'resnet50' # 'resnet101' , 'resnet50'
         self.norm = 'batch_norm' # one of None, 'instance_norm', 'batch_norm'
@@ -132,7 +132,7 @@ class configs(DefaultConfigs):
 
         self.num_epochs = 600
         self.num_train_batches = 50 if self.dim == 2 else 50
-        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 8
+        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 4
 
         self.do_validation = True if self.select_prototype_subset is None else False
         # decide whether to validate on entire patient volumes (like testing) or sampled patches (like training)
@@ -181,11 +181,11 @@ class configs(DefaultConfigs):
         'do_elastic_deform': True,
         'alpha':(0., 1500.),
         'sigma':(30., 50.),
-        'do_rotation':False,
+        'do_rotation':True,
         'angle_x': (0., 0. * np.pi),
         'angle_y': (0., 0),
         'angle_z': (0., 0),
-        'do_scale': False,
+        'do_scale': True,
         'scale':(0.8, 1.1),
         'random_crop':True,
         'rand_crop_dist':  (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3),
@@ -196,7 +196,7 @@ class configs(DefaultConfigs):
 
         if self.dim == 3:
             self.da_kwargs['rand_crop_dist'] = (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3, self.patch_size[2] / 2. - 3)
-            self.da_kwargs['do_elastic_deform'] = False
+            self.da_kwargs['do_elastic_deform'] = True
             self.da_kwargs['angle_x'] = (0, 0.0)
             self.da_kwargs['angle_y'] = (0, 0.0) #must be 0!!
             self.da_kwargs['angle_z'] = (0., 2 * np.pi)
@@ -235,8 +235,6 @@ class configs(DefaultConfigs):
         self.wce_weights = [1, 1]
         self.detection_min_confidence = self.min_det_thresh
 
-        # if 'True', loss distinguishes all classes, else only foreground vs. background (class agnostic).
-#         self.class_specific_seg_flag = True
         self.num_seg_classes = 2
         self.head_classes = self.num_seg_classes
 
@@ -253,7 +251,6 @@ class configs(DefaultConfigs):
 
         # set number of proposal boxes to plot after each epoch.
         self.n_plot_rpn_props = 5 if self.dim == 2 else 30
-#         self.n_plot_rpn_props = 5 if self.dim == 2 else 60
 
         # number of classes for head networks: n_foreground_classes + 1 (background)
 #         self.head_classes = 3
@@ -285,7 +282,7 @@ class configs(DefaultConfigs):
         # Threshold for first stage (RPN) non-maximum suppression (NMS):  LOWER == HARDER SELECTION
         self.rpn_nms_threshold = 0.7 if self.dim == 2 else 0.7
 
-        # loss sampling settings.
+        # loss sampling settings. 
         self.rpn_train_anchors_per_image = 6  #per batch element
         self.train_rois_per_image = 6 #per batch element
         self.roi_positive_ratio = 0.5

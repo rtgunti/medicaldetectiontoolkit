@@ -391,8 +391,11 @@ class net(nn.Module):
         img = batch['data']
         gt_class_ids = batch['roi_labels']
         gt_boxes = batch['bb_target']
+        
+
         var_seg_ohe = torch.FloatTensor(mutils.get_one_hot_encoding(batch['seg'], self.cf.num_seg_classes)).cuda()
         var_seg = torch.LongTensor(batch['seg']).cuda()
+
 
         img = torch.from_numpy(img).float().cuda()
         batch_class_loss = torch.FloatTensor([0]).cuda()
@@ -401,6 +404,17 @@ class net(nn.Module):
         # list of output boxes for monitoring/plotting. each element is a list of boxes per batch element.
         box_results_list = [[] for _ in range(img.shape[0])]
         detections, class_logits, pred_deltas, seg_logits = self.forward(img)
+        
+        shapes_debug = False
+        if(shapes_debug):
+            print("GT Shape : ", gt_class_ids.shape, gt_boxes.shape)
+            print("gt_class_ids : ", gt_class_ids)
+            print("gt_boxes : ", gt_boxes)   
+            print("var_seg : ", var_seg.shape)
+            print("var_seg_ohe : ", var_seg_ohe.shape)
+            print("detections : ", detections.shape)
+            print("class_logits : ", class_logits.shape)
+            print("pred_deltas : ", pred_deltas.shape)
 
         # loop over batch
         for b in range(img.shape[0]):

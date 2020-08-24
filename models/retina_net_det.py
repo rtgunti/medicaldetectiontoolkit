@@ -15,6 +15,7 @@
 # ==============================================================================
 
 """
+Retina Net. Just for presence of lesion
 Retina Net. According to https://arxiv.org/abs/1708.02002
 Retina U-Net. According to https://arxiv.org/abs/1811.08661
 """
@@ -79,44 +80,44 @@ class Classifier(nn.Module):
 
 
 
-class BBRegressor(nn.Module):
+# class BBRegressor(nn.Module):
 
 
-    def __init__(self, cf, conv):
-        """
-        Builds the bb-regression sub-network.
-        """
-        super(BBRegressor, self).__init__()
-        self.dim = conv.dim
-        n_input_channels = cf.end_filts
-        n_features = cf.n_rpn_features
-        n_output_channels = cf.n_anchors_per_pos * self.dim * 2
-        anchor_stride = cf.rpn_anchor_stride
+#     def __init__(self, cf, conv):
+#         """
+#         Builds the bb-regression sub-network.
+#         """
+#         super(BBRegressor, self).__init__()
+#         self.dim = conv.dim
+#         n_input_channels = cf.end_filts
+#         n_features = cf.n_rpn_features
+#         n_output_channels = cf.n_anchors_per_pos * self.dim * 2
+#         anchor_stride = cf.rpn_anchor_stride
 
-        self.conv_1 = conv(n_input_channels, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_2 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride,
-                               pad=1, relu=None)
+#         self.conv_1 = conv(n_input_channels, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+#         self.conv_2 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+#         self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+#         self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+#         self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride,
+#                                pad=1, relu=None)
 
-    def forward(self, x):
-        """
-        :param x: input feature map (b, in_c, y, x, (z))
-        :return: bb_logits (b, n_anchors, dim * 2)
-        """
-        x = self.conv_1(x)
-        x = self.conv_2(x)
-        x = self.conv_3(x)
-        x = self.conv_4(x)
-        bb_logits = self.conv_final(x)
+#     def forward(self, x):
+#         """
+#         :param x: input feature map (b, in_c, y, x, (z))
+#         :return: bb_logits (b, n_anchors, dim * 2)
+#         """
+#         x = self.conv_1(x)
+#         x = self.conv_2(x)
+#         x = self.conv_3(x)
+#         x = self.conv_4(x)
+#         bb_logits = self.conv_final(x)
 
-        axes = (0, 2, 3, 1) if self.dim == 2 else (0, 2, 3, 4, 1)
-        bb_logits = bb_logits.permute(*axes)
-        bb_logits = bb_logits.contiguous()
-        bb_logits = bb_logits.view(x.size()[0], -1, self.dim * 2)
+#         axes = (0, 2, 3, 1) if self.dim == 2 else (0, 2, 3, 4, 1)
+#         bb_logits = bb_logits.permute(*axes)
+#         bb_logits = bb_logits.contiguous()
+#         bb_logits = bb_logits.view(x.size()[0], -1, self.dim * 2)
 
-        return [bb_logits]
+#         return [bb_logits]
 
 
 ############################################################
@@ -164,27 +165,27 @@ def compute_class_loss(anchor_matches, class_pred_logits, shem_poolsize=20):
     return loss, np_neg_ix
 
 
-def compute_bbox_loss(target_deltas, pred_deltas, anchor_matches):
-    """
-    :param target_deltas:   (b, n_positive_anchors, (dy, dx, (dz), log(dh), log(dw), (log(dd)))).
-    Uses 0 padding to fill in unsed bbox deltas.
-    :param pred_deltas: predicted deltas from bbox regression head. (b, n_anchors, (dy, dx, (dz), log(dh), log(dw), (log(dd))))
-    :param anchor_matches: (n_anchors). [-1, 0, class_id] for negative, neutral, and positive matched anchors.
-    :return: loss: torch 1D tensor.
-    """
-    if 0 not in torch.nonzero(anchor_matches > 0).size():
+# def compute_bbox_loss(target_deltas, pred_deltas, anchor_matches):
+#     """
+#     :param target_deltas:   (b, n_positive_anchors, (dy, dx, (dz), log(dh), log(dw), (log(dd)))).
+#     Uses 0 padding to fill in unsed bbox deltas.
+#     :param pred_deltas: predicted deltas from bbox regression head. (b, n_anchors, (dy, dx, (dz), log(dh), log(dw), (log(dd))))
+#     :param anchor_matches: (n_anchors). [-1, 0, class_id] for negative, neutral, and positive matched anchors.
+#     :return: loss: torch 1D tensor.
+#     """
+#     if 0 not in torch.nonzero(anchor_matches > 0).size():
 
-        indices = torch.nonzero(anchor_matches > 0).squeeze(1)
-        # Pick bbox deltas that contribute to the loss
-        pred_deltas = pred_deltas[indices]
-        # Trim target bounding box deltas to the same length as pred_deltas.
-        target_deltas = target_deltas[:pred_deltas.size()[0], :]
-        # Smooth L1 loss
-        loss = F.smooth_l1_loss(pred_deltas, target_deltas)
-    else:
-        loss = torch.FloatTensor([0]).cuda()
+#         indices = torch.nonzero(anchor_matches > 0).squeeze(1)
+#         # Pick bbox deltas that contribute to the loss
+#         pred_deltas = pred_deltas[indices]
+#         # Trim target bounding box deltas to the same length as pred_deltas.
+#         target_deltas = target_deltas[:pred_deltas.size()[0], :]
+#         # Smooth L1 loss
+#         loss = F.smooth_l1_loss(pred_deltas, target_deltas)
+#     else:
+#         loss = torch.FloatTensor([0]).cuda()
 
-    return loss
+#     return loss
 
 
 ############################################################
@@ -374,7 +375,7 @@ class net(nn.Module):
         self.anchors = torch.from_numpy(self.np_anchors).float().cuda()
         self.Fpn = backbone.FPN(self.cf, conv, operate_stride1=self.cf.operate_stride1)
         self.Classifier = Classifier(self.cf, conv)
-        self.BBRegressor = BBRegressor(self.cf, conv)
+#         self.BBRegressor = BBRegressor(self.cf, conv)
 
 
     def train_forward(self, batch, **kwargs):
@@ -389,13 +390,11 @@ class net(nn.Module):
                 'monitor_values': dict of values to be monitored.
         """
         img = batch['data']
+        print("Input Image Shape : ", img.shape, torch.cuda.current_device())
         gt_class_ids = batch['roi_labels']
         gt_boxes = batch['bb_target']
-        
-
         var_seg_ohe = torch.FloatTensor(mutils.get_one_hot_encoding(batch['seg'], self.cf.num_seg_classes)).cuda()
         var_seg = torch.LongTensor(batch['seg']).cuda()
-
 
         img = torch.from_numpy(img).float().cuda()
         batch_class_loss = torch.FloatTensor([0]).cuda()
@@ -404,17 +403,6 @@ class net(nn.Module):
         # list of output boxes for monitoring/plotting. each element is a list of boxes per batch element.
         box_results_list = [[] for _ in range(img.shape[0])]
         detections, class_logits, pred_deltas, seg_logits = self.forward(img)
-        
-        shapes_debug = False
-        if(shapes_debug):
-            print("GT Shape : ", gt_class_ids.shape, gt_boxes.shape)
-            print("gt_class_ids : ", gt_class_ids)
-            print("gt_boxes : ", gt_boxes)   
-            print("var_seg : ", var_seg.shape)
-            print("var_seg_ohe : ", var_seg_ohe.shape)
-            print("detections : ", detections.shape)
-            print("class_logits : ", class_logits.shape)
-            print("pred_deltas : ", pred_deltas.shape)
 
         # loop over batch
         for b in range(img.shape[0]):
