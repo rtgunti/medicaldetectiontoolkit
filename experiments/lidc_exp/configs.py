@@ -51,7 +51,7 @@ class configs(DefaultConfigs):
         self.dim = 3
 
         # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
-        self.model = 'detection_unet'
+        self.model = 'retina_net'
         
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
@@ -141,7 +141,7 @@ class configs(DefaultConfigs):
         if self.val_mode == 'val_patient':
             self.max_val_patients = None  # if 'None' iterates over entire val_set once.
         if self.val_mode == 'val_sampling':
-            self.num_val_batches = 10
+            self.num_val_batches = 11
 
         #########################
         #   Testing / Plotting  #

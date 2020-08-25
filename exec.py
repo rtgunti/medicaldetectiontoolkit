@@ -38,11 +38,6 @@ def train(logger):
 
     net = model.net(cf, logger).cuda()
     
-#     print("Using {} gpus".format(torch.cuda.device_count()))
-#     net = torch.nn.DataParallel(net, device_ids = [0,1,2,3])
-#     print("Device : ", device)
-#     net.to(device)
-    
     optimizer = torch.optim.Adam(net.parameters(), lr=cf.learning_rate[0], weight_decay=cf.weight_decay)
     model_selector = utils.ModelSelector(cf, logger)
     train_evaluator = Evaluator(cf, logger, mode='train')

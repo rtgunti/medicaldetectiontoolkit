@@ -107,6 +107,7 @@ def get_test_generator(cf, logger):
 
     test_data = load_dataset(cf, logger, test_ix, pp_data_path=cf.pp_test_data_path, pp_name=pp_name)
     logger.info("data set loaded with: {} test patients".format(len(test_ix)))
+    logger.info(str([i for i in test_ix]))
     batch_gen = {}
     batch_gen['test'] = PatientBatchIterator(test_data, cf=cf)
     batch_gen['n_test'] = len(test_ix) if cf.max_test_patients=="all" else \

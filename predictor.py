@@ -151,6 +151,7 @@ class Predictor:
 #                     print(batch.keys())
                     # store batch info in patient entry of results dict.
                     if rank_ix == 0:
+                        print("Yes! It's zero")
                         dict_of_patient_results[batch['pid']] = {}
                         dict_of_patient_results[batch['pid']]['results_list'] = []
                         dict_of_patient_results[batch['pid']]['patient_bb_target'] = batch['patient_bb_target']
