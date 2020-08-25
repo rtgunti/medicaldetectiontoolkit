@@ -69,7 +69,7 @@ def prep_exp(exp_source, exp_dir, server_env, use_stored_settings=True, is_train
             os.mkdir(os.path.join(exp_dir, 'plots'))
             subprocess.call('cp {} {}'.format(os.path.join(exp_source, 'configs.py'), os.path.join(exp_dir, 'configs.py')), shell=True)
             subprocess.call('cp {} {}'.format('default_configs.py', os.path.join(exp_dir, 'default_configs.py')), shell=True)
-
+            subprocess.call('cp {} {}'.format(os.path.join(exp_source, 'data_loader.py'), os.path.join(exp_dir, 'data_loader.py')), shell=True)
 
         if use_stored_settings:
             subprocess.call('cp {} {}'.format('default_configs.py', os.path.join(exp_dir, 'default_configs.py')), shell=True)
@@ -78,7 +78,7 @@ def prep_exp(exp_source, exp_dir, server_env, use_stored_settings=True, is_train
             # only the first process copies the model selcted in configs to exp_dir.
             if not os.path.isfile(os.path.join(exp_dir, 'model.py')):
                 subprocess.call('cp {} {}'.format(cf.model_path, os.path.join(exp_dir, 'model.py')), shell=True)
-                subprocess.call('cp {} {}'.format(os.path.join(cf.backbone_path), os.path.join(exp_dir, 'backbone.py')), shell=True)
+                subprocess.call('cp {} {}'.format(cf.backbone_path, os.path.join(exp_dir, 'backbone.py')), shell=True)
 
             # copy the snapshot model scripts from exp_dir back to the source_dir as tmp_model / tmp_backbone.
             tmp_model_path = os.path.join(cf.source_dir, 'models', 'tmp_model.py')
