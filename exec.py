@@ -141,6 +141,12 @@ def test(logger):
     test_evaluator = Evaluator(cf, logger, mode='test')
     batch_gen = data_loader.get_test_generator(cf, logger)
     test_results_list = test_predictor.predict_test_set(batch_gen, return_results=True)
+    print(len(test_results_list))
+    print(len(test_results_list[0]))
+    print(len(test_results_list[0][0]))
+    print(len(test_results_list[0][0][0]))
+    print(type(test_results_list[0][0][0][0]))
+    print((test_results_list[0][0][0][0].keys()))
     test_evaluator.evaluate_predictions(test_results_list)
     test_evaluator.score_test_df()
 
@@ -192,7 +198,7 @@ if __name__ == '__main__':
             cf.data_dest = args.data_dest
         
         model = utils.import_module('model', cf.model_path)
-        data_loader = utils.import_module('dl', os.path.join(args.exp_source, 'data_loader.py'))
+        data_loader = utils.import_module('dl', os.path.join(args.exp_dir, 'data_loader.py'))
         if folds is None:
             folds = range(cf.n_cv_splits)
 
@@ -221,11 +227,12 @@ if __name__ == '__main__':
 
         cf.data_dest = args.data_dest
         model = utils.import_module('model', cf.model_path)
-        data_loader = utils.import_module('dl', os.path.join(args.exp_source, 'data_loader.py'))
+        data_loader = utils.import_module('dl', os.path.join(args.exp_dir, 'data_loader.py'))
         if folds is None:
             folds = range(cf.n_cv_splits)
 
         for fold in folds:
+            print("F O L D : ", fold)
             cf.fold_dir = os.path.join(cf.exp_dir, 'fold_{}'.format(fold))
             logger = utils.get_logger(cf.fold_dir)
             cf.fold = fold

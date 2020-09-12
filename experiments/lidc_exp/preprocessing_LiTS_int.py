@@ -33,21 +33,20 @@ import nibabel
 import configs
 cf = configs.configs()
 
-def resample_array(img, mask, src_spacing, target_spacing):
+def resample_array(src_imgs, src_spacing, target_spacing):
 
     src_spacing = np.round(src_spacing, 3)
-    target_shape = [int(img.shape[ix] * src_spacing[ix] / target_spacing[ix]) for ix in range(len(img.shape))]
+    target_shape = [int(src_imgs.shape[ix] * src_spacing[::-1][ix] / target_spacing[::-1][ix]) for ix in range(len(src_imgs.shape))]
     for i in range(len(target_shape)):
         try:
             assert target_shape[i] > 0
         except:
             raise AssertionError("AssertionError:", src_imgs.shape, src_spacing, target_spacing)
-    print(img.shape, src_spacing, target_shape, target_spacing)
-    img = img.astype(float)
-    resampled_img = resize(img, target_shape, order=1, mode='constant').astype('float32')
-    resampled_mask = resize(mask, target_shape, order=0, mode='constant').astype('float32')
 
-    return resampled_img, resampled_mask
+    img = src_imgs.astype(float)
+    resampled_img = resize(img, target_shape, order=1, clip=True, mode='edge').astype('float32')
+
+    return resampled_img
 
 
 def pp_patient(inputs):
@@ -61,29 +60,27 @@ def pp_patient(inputs):
     img_arr = img.get_fdata()
     mask_arr = mask.get_fdata()
     
-    if(img_arr.shape != mask_arr.shape):
-        print('='*10)
-        return
-    
     img_arr = np.rot90(img_arr)
     mask_arr = np.rot90(mask_arr)
-    
+ 
     img_arr *= np.clip(mask_arr, 0, 1)
+    
+    img_arr, mask_arr = trim_data(img_arr, mask_arr)
     
     mask_arr = np.clip(mask_arr, 0, 2)
     mask_arr[mask_arr == 1] = 0
     mask_arr[mask_arr == 2] = 1
+        
+#     img_arr = np.fliplr(img_arr)   #only for thesis
+#     mask_arr = np.fliplr(mask_arr)
     
-    img_arr, mask_arr = trim_data(img_arr, mask_arr)
-    
-    img_arr, mask_arr = resample_array(img_arr, mask_arr, img.header.get_zooms(), (1.0, 1.0, 2.0))
-    
-    print('Processing {}'.format(pid), img_arr.shape, mask_arr.shape)
+    print('Processing {}'.format(pid), img_arr.shape)
     img_arr = img_arr.astype(np.float32)
     img_arr = (img_arr - np.mean(img_arr)) / np.std(img_arr).astype(np.float16)
     final_rois = mask_arr
     mal_labels = [0]
 
+#     fg_slices = [ii for ii in np.unique(np.argwhere(final_rois != 0)[:, 0])]
     fg_slices = [ii for ii in np.unique(np.argwhere(final_rois != 0)[:, -1])]
     print(fg_slices)
     mal_labels = np.array(mal_labels)
@@ -119,7 +116,7 @@ def trim_data(imgs, masks):
     cropped img, mask with same number of dimensions (b,c,x,y,z)
 
     '''
-    print("Prior trim : ", imgs.shape, masks.shape)
+    print(imgs.shape, masks.shape)
     
     x = np.any(imgs, axis=(1, 2))
     y = np.any(imgs, axis=(0, 2))
@@ -135,15 +132,16 @@ def trim_data(imgs, masks):
     imgs = np.pad(imgs, (5,), mode='constant')
     masks = np.pad(masks, (5,), mode='constant')
     
-    print("Post trim : ", imgs.shape, masks.shape)
-    return imgs, masks     
+    print(imgs.shape, masks.shape)
+    return imgs,masks     
     
 if __name__ == "__main__":
 
     data_paths = sorted([path for path in os.listdir(cf.raw_data_dir)])
     seg_paths = sorted([path for path in os.listdir(cf.raw_seg_dir)])
     paths = [p for p in zip(data_paths, seg_paths)]
-#     paths = paths[:1]
+#     paths = [p for p in zip(os.listdir(cf.raw_data_dir),os.listdir(cf.raw_seg_dir)) if 'pre' in p[0]]
+#     paths = paths[:4]
 
     if not os.path.exists(cf.pp_dir):
         os.mkdir(cf.pp_dir)

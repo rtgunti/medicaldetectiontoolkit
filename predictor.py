@@ -176,7 +176,7 @@ class Predictor:
                                      for batch_instance in range(len(tmp_ens_list[0]))]
 
             # TODO return for instance segmentation:
-            # results_dict['seg_preds'] = np.mean(results_dict['seg_preds'], 1)[:, None]
+#             results_dict['seg_preds'] = np.mean(results_dict['seg_preds'], 1)[:, None]
             # results_dict['seg_preds'] = np.array([[item for d in tmp_ens_list for item in d['seg_preds'][batch_instance]]
             #                                       for batch_instance in range(len(tmp_ens_list[0]['boxes']))])
 

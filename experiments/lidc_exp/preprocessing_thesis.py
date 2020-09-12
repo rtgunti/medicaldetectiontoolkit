@@ -33,26 +33,26 @@ import nibabel
 import configs
 cf = configs.configs()
 
-def resample_array(src_imgs, src_spacing, target_spacing):
+def resample_array(img, mask, src_spacing, target_spacing):
 
     src_spacing = np.round(src_spacing, 3)
-    target_shape = [int(src_imgs.shape[ix] * src_spacing[::-1][ix] / target_spacing[::-1][ix]) for ix in range(len(src_imgs.shape))]
+    target_shape = [int(img.shape[ix] * src_spacing[ix] / target_spacing[ix]) for ix in range(len(img.shape))]
     for i in range(len(target_shape)):
         try:
             assert target_shape[i] > 0
         except:
             raise AssertionError("AssertionError:", src_imgs.shape, src_spacing, target_spacing)
+    img = img.astype(float)
+    resampled_img = resize(img, target_shape, order=1, mode='edge').astype('float32')
+    resampled_mask = resize(mask, target_shape, order=0, mode='edge').astype('float32')
 
-    img = src_imgs.astype(float)
-    resampled_img = resize(img, target_shape, order=1, clip=True, mode='edge').astype('float32')
-
-    return resampled_img
+    return resampled_img, resampled_mask
 
 
 def pp_patient(inputs):
 
     ix, (dat, seg) = inputs
-    pid = dat.split('_')[0]
+    pid = str(dat.split('_')[0]) + '_' + str(dat.split('_')[1])
     
     img = nibabel.load(os.path.join(cf.raw_data_dir, dat))
     mask = nibabel.load(os.path.join(cf.raw_seg_dir, seg))
@@ -60,14 +60,11 @@ def pp_patient(inputs):
     img_arr = img.get_fdata()
     mask_arr = mask.get_fdata()
     
-#     # (x, y, z) to (z, x, y)
-#     print(img_arr.shape)
-#     img_arr = np.transpose(img_arr, axes=(2, 0, 1))
-#     mask_arr = np.transpose(mask_arr, axes = (2, 0, 1))
-#     print(img_arr.shape)
-    
     img_arr = np.rot90(img_arr)
     mask_arr = np.rot90(mask_arr)
+    
+    img_arr = np.fliplr(img_arr)   #only for thesis
+    mask_arr = np.fliplr(mask_arr)
  
     img_arr *= np.clip(mask_arr, 0, 1)
     
@@ -75,8 +72,7 @@ def pp_patient(inputs):
     mask_arr[mask_arr == 1] = 0
     mask_arr[mask_arr == 2] = 1
         
-    img_arr = np.fliplr(img_arr)   #only for thesis
-    mask_arr = np.fliplr(mask_arr)
+    img_arr, mask_arr = resample_array(img_arr, mask_arr, img.header.get_zooms(), (1.0, 1.0, 2.0))
     
     print('Processing {}'.format(pid), img_arr.shape)
     img_arr = img_arr.astype(np.float32)
@@ -113,7 +109,6 @@ if __name__ == "__main__":
     data_paths = sorted([path for path in os.listdir(cf.raw_data_dir) if 'pre' in path])
     seg_paths = sorted([path for path in os.listdir(cf.raw_seg_dir) if 'pre' in path])
     paths = [p for p in zip(data_paths, seg_paths)]
-#     paths = [p for p in zip(os.listdir(cf.raw_data_dir),os.listdir(cf.raw_seg_dir)) if 'pre' in p[0]]
 #     paths = paths[:4]
 
     if not os.path.exists(cf.pp_dir):
@@ -123,8 +118,6 @@ if __name__ == "__main__":
     p1 = pool.map(pp_patient, enumerate(paths), chunksize=1)
     pool.close()
     pool.join()
-    # for i in enumerate(paths):
-    #     pp_patient(i)
-
+    
     aggregate_meta_info(cf.pp_dir)
     subprocess.call('cp {} {}'.format(os.path.join(cf.pp_dir, 'info_df.pickle'), os.path.join(cf.pp_dir, 'info_df_bk.pickle')), shell=True)

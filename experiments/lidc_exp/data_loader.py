@@ -59,7 +59,7 @@ def get_train_generators(cf, logger):
             fg = pickle.load(handle)
 
     train_ix, val_ix, test_ix, _ = fg[cf.fold] 
-    print("Split : ", len(train_ix), len(val_ix), len(test_ix))
+    logger.info("Split : Train [{}], Val [{}], Test [{}]".format(len(train_ix), len(val_ix), len(test_ix)))
 
     train_pids = [all_pids_list[ix] for ix in train_ix]
     val_pids = [all_pids_list[ix] for ix in val_ix]
@@ -68,8 +68,8 @@ def get_train_generators(cf, logger):
         train_pids += [all_pids_list[ix] for ix in test_ix]
         test_pids = []
 
-    print("Train pids : ", train_pids)
-    print("Val pids : ", val_pids)
+    logger.info("Train pids : {}".format(str(train_pids)))
+    logger.info("Val pids : {}".format(str(val_pids)))
     
     train_data = {k: v for (k, v) in all_data.items() if any(p == v['pid'] for p in train_pids)}
     val_data = {k: v for (k, v) in all_data.items() if any(p == v['pid'] for p in val_pids)}
@@ -108,6 +108,8 @@ def get_test_generator(cf, logger):
         test_ix = val_ix if len(test_ix) == 0 else test_ix  ## Use val if test is empty
     
 #     test_ix = test_ix[:5]
+    if cf.test_subset_ixs:
+        test_ix = cf.test_subset_ixs
     test_data = load_dataset(cf, logger, test_ix, pp_data_path=cf.pp_test_data_path, pp_name=pp_name)
     logger.info("data set loaded with: {} test patients".format(len(test_ix)))
     logger.info(str([all_pids_list[i] for i in test_ix]))
@@ -309,11 +311,11 @@ class BatchGenerator(SlimDataLoaderBase):
                         if low >= high:
                             low = data.shape[ii + 1] // 2 - (data.shape[ii + 1] // 2 - self.cf.pre_crop_size[ii] // 2)
                             high = data.shape[ii + 1] // 2 + (data.shape[ii + 1] // 2 - self.cf.pre_crop_size[ii] // 2)
-                        sample_seg_center[ii] = np.random.randint(low=low, high=high)
+                        sample_seg_center[ii] = np.random.randint(low=low, high=high) if low < high else low
 
                 else:
 #                     print(b, "Selecting random center pixel from whole")
-                    # not guaranteed to be empty. probability of emptiness depends on the data.
+#                     not guaranteed to be empty. probability of emptiness depends on the data.
                     sample_seg_center = {ii: np.random.randint(low=self.cf.pre_crop_size[ii]//2,
                                                            high=data.shape[ii + 1] - self.cf.pre_crop_size[ii]//2) for ii in crop_dims}
 

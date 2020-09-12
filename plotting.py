@@ -22,6 +22,7 @@ import numpy as np
 import os
 from copy import deepcopy
 
+
 def plot_batch_prediction(batch, results_dict, cf, outfile= None):
     """
     plot the input images, ground truth annotations, and output predictions of a batch. If 3D batch, plots a 2D projection
@@ -53,10 +54,12 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
         data = np.transpose(data[patient_ix], axes=(3, 0, 1, 2))  # @rtgunti : (c, x, y, z) to (z, c, x, y)
         # select interesting foreground section to plot.
         gt_boxes = [box['box_coords'] for box in roi_results[patient_ix] if box['box_type'] == 'gt']
+        print("len(gt_boxes) : ", len(gt_boxes))
         if len(gt_boxes) > 0:
             z_cuts = [np.max((int(gt_boxes[0][4]) - 5, 0)), np.min((int(gt_boxes[0][5]) + 5, data.shape[0]))]
         else:
             z_cuts = [data.shape[0]//2 - 5, int(data.shape[0]//2 + np.min([10, data.shape[0]//2]))]
+#         print("z_cuts : ", z_cuts)
         p_roi_results = roi_results[patient_ix]
         roi_results = [[] for _ in range(data.shape[0])]
 
@@ -161,7 +164,6 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
     except:
         raise Warning('failed to save plot.')
     plt.close(fig)
-
 
 
 class TrainingPlot_2Panel():
