@@ -169,7 +169,7 @@ if __name__ == '__main__':
                              'where source code might change before the job actually runs.')
     parser.add_argument('--resume_to_checkpoint', type=str, default=None,
                         help='if resuming to checkpoint, the desired fold still needs to be parsed via --folds.')
-    parser.add_argument('--exp_source', type=str, default='experiments/lidc_exp',
+    parser.add_argument('--exp_source', type=str, default='/path/to/experiment/source',
                         help='specifies, from which source experiment to load configs and data_loader.')
     parser.add_argument('-d', '--dev', default=False, action='store_true', help="development mode: shorten everything")
 

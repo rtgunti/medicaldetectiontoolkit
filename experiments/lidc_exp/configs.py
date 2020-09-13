@@ -59,8 +59,9 @@ class configs(DefaultConfigs):
         # int [0 < dataset_size]. select n patients from dataset for prototyping. If None, all data is used.
         self.select_prototype_subset = None
         self.subset_ixs = None
-        self.hold_out_test_set = None
-        self.test_subset_ixs = [10]
+        self.hold_out_test_set = True
+        self.test_subset_ixs = None
+        self.data_dest = ''
 
         # path to preprocessed data.
         self.pp_name = 'data_pp'
@@ -135,7 +136,7 @@ class configs(DefaultConfigs):
 
         self.num_epochs = 1200
         self.num_train_batches = 50 if self.dim == 2 else 50
-        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 4
+        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 6
 
         self.do_validation = True if self.select_prototype_subset is None else False
         # decide whether to validate on entire patient volumes (like testing) or sampled patches (like training)
@@ -152,8 +153,8 @@ class configs(DefaultConfigs):
 
         # set the top-n-epochs to be saved for temporal averaging in testing.
         self.save_n_models = 2
-        self.test_n_epochs = 1
-        self.test_aug = False
+        self.test_n_epochs = 2
+        self.test_aug = True
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
 
@@ -351,7 +352,7 @@ class configs(DefaultConfigs):
                                            self.rpn_anchor_scales['z']]
             self.n_anchors_per_pos = len(self.rpn_anchor_ratios) * 3
 
-            self.n_rpn_features = 256 if self.dim == 2 else 64
+            self.n_rpn_features = 256 if self.dim == 2 else 128
 
             # pre-selection of detections for NMS-speedup. per entire batch.
             self.pre_nms_limit = 10000 if self.dim == 2 else 50000

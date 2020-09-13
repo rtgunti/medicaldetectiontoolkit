@@ -96,7 +96,7 @@ def prep_exp(exp_source, exp_dir, server_env, use_stored_settings=True, is_train
             subprocess.call('cp {} {}'.format(cf.backbone_path, os.path.join(exp_dir, 'backbone.py')), shell=True)
             subprocess.call('cp {} {}'.format('default_configs.py', os.path.join(exp_dir, 'default_configs.py')), shell=True)
             subprocess.call('cp {} {}'.format(os.path.join(exp_source, 'configs.py'), os.path.join(exp_dir, 'configs.py')), shell=True)
-
+            subprocess.call('cp {} {}'.format(os.path.join(exp_source, 'data_loader.py'), os.path.join(exp_dir, 'data_loader.py')), shell=True)
     else:
         # for testing, copy the snapshot model scripts from exp_dir back to the source_dir as tmp_model / tmp_backbone.
         cf_file = import_module('cf', os.path.join(exp_dir, 'configs.py'))

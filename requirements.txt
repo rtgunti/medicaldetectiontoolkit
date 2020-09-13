@@ -28,3 +28,4 @@ unittest2==1.1.0
 nibabel==3.1.1
 torchsummary==1.5.1
 virtualenv==20.0.28
+colabcode==0.0.8
