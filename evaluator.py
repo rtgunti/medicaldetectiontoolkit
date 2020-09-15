@@ -327,7 +327,7 @@ class Evaluator():
 
             with open(os.path.join(self.cf.exp_dir, 'results.txt'), 'a') as handle:
                 handle.write('\n****************************\n')
-                handle.write('\nresults for fold {} \n'.format(self.cf.fold))
+                handle.write('\nresults for exp_dir : {} fold {} \n'.format(self.cf.exp_dir, self.cf.fold))
                 handle.write('\n****************************\n')
                 handle.write('\nfold df shape {}\n  \n'.format(self.test_df.shape))
                 for s in stats:

@@ -58,7 +58,7 @@ def get_train_generators(cf, logger):
         with open(os.path.join(cf.exp_dir, 'fold_ids.pickle'), 'rb') as handle:
             fg = pickle.load(handle)
 
-    train_ix, val_ix, test_ix, _ = fg[cf.fold] 
+    train_ix, val_ix, test_ix, _ = fg[cf.fold]
 
     train_pids = [all_pids_list[ix] for ix in train_ix]
     val_pids = [all_pids_list[ix] for ix in val_ix]
@@ -67,16 +67,14 @@ def get_train_generators(cf, logger):
         train_pids += [all_pids_list[ix] for ix in test_ix]
         test_pids = []
 
-    logger.info("Split : Train [{}], Val [{}], Test [{}]".format(len(train_pids), len(val_pids), len(test_pids)))
-        
-    logger.info("Train pids : {}".format(str(train_pids)))
-    logger.info("Val pids : {}".format(str(val_pids)))
+
     
     train_data = {k: v for (k, v) in all_data.items() if any(p == v['pid'] for p in train_pids)}
     val_data = {k: v for (k, v) in all_data.items() if any(p == v['pid'] for p in val_pids)}
     
-#     logger.info("data set loaded with: {} train / {} val / {} test records".format(len(train_ix), len(val_ix), len(test_ix)))
-    logger.info("data set loaded with: {} train / {} val records".format(len(train_pids), len(val_pids)))
+    logger.info("Split : Train [{}], Val [{}], Test [{}]".format(len(train_pids), len(val_pids), len(test_pids)))
+    logger.info("Train pids : {}".format(str(train_pids)))
+    logger.info("Val pids : {}".format(str(val_pids)))
     batch_gen = {}
     batch_gen['train'] = create_data_gen_pipeline(train_data, cf=cf, is_training=True)
     batch_gen['val_sampling'] = create_data_gen_pipeline(val_data, cf=cf, is_training=False)
@@ -87,7 +85,6 @@ def get_train_generators(cf, logger):
         batch_gen['n_val'] = cf.num_val_batches
 
     return batch_gen
-
 
 
 def get_test_generator(cf, logger):
@@ -129,21 +126,18 @@ def load_dataset(cf, logger, subset_ixs=None, pp_data_path=None, pp_name=None):
         pp_name = cf.pp_name
     if cf.server_env:
         copy_data = True
-        target_dir = os.path.join(cf.data_dest, pp_name)
-        if not os.path.exists(target_dir):
+        data_target_dir = os.path.join(cf.data_dest, pp_name)
+        if not os.path.exists(data_target_dir):
             cf.data_source_dir = pp_data_path
-            os.makedirs(target_dir)
+            os.makedirs(data_target_dir)
             subprocess.call('rsync -av {} {}'.format(
-                os.path.join(cf.data_source_dir, cf.input_df_name), os.path.join(target_dir, cf.input_df_name)), shell=True)
-            logger.info('created target dir and info df at {}'.format(os.path.join(target_dir, cf.input_df_name)))
+                os.path.join(cf.data_source_dir, cf.input_df_name), os.path.join(data_target_dir, cf.input_df_name)), shell=True)
+            logger.info('created target dir and info df at {}'.format(os.path.join(data_target_dir, cf.input_df_name)))
 
         elif subset_ixs is None:
             copy_data = False
 
-        pp_data_path = target_dir
-        
-    if cf.data_dest:
-        pp_data_path = cf.data_dest
+        pp_data_path = data_target_dir
 
     p_df = pd.read_pickle(os.path.join(pp_data_path, cf.input_df_name))
 
@@ -163,7 +157,7 @@ def load_dataset(cf, logger, subset_ixs=None, pp_data_path=None, pp_name=None):
 
     if cf.server_env:
         if copy_data:
-            copy_and_unpack_data(logger, p_df.pid.tolist(), cf.fold_dir, cf.data_source_dir, target_dir)
+            copy_and_unpack_data(logger, p_df.pid.tolist(), cf.fold_dir, cf.data_source_dir, data_target_dir)
 
     class_targets = p_df['class_target'].tolist()
     pids = p_df.pid.tolist()
@@ -474,8 +468,6 @@ def copy_and_unpack_data(logger, pids, fold_dir, source_dir, target_dir):
     start_time = time.time()
     with open(os.path.join(fold_dir, 'file_list.txt'), 'w') as handle:
         for pid in pids:
-#             handle.write('{}_img.npz\n'.format(pid))
-#             handle.write('{}_rois.npz\n'.format(pid))
             handle.write('{}_img.npy\n'.format(pid))
             handle.write('{}_rois.npy\n'.format(pid))
 

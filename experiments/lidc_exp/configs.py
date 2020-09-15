@@ -37,16 +37,11 @@ class configs(DefaultConfigs):
 #         self.pp_dir = '{}/data_pp_int'.format(self.root_dir)
         self.target_spacing = (1.0, 1.0, 2.25)
         
-        if server_env:
-            self.root_dir = "/content/drive/My\' \'Drive/Thesis/Thesis/"
-            self.raw_data_dir = '{}/Dataset/data/'.format(self.root_dir)
-            self.raw_seg_dir = '{}/Dataset/seg/'.format(self.root_dir)
-            self.pp_dir = '{}/data_pp'.format(self.root_dir)
 
         #########################
         #         I/O           #
-        #########################
-
+        #########################    
+        
 
         # one out of [2, 3]. dimension the model operates in.
         self.dim = 3
@@ -67,20 +62,19 @@ class configs(DefaultConfigs):
         self.pp_name = 'data_pp'
 #         self.pp_name = 'data_pp_int'
 #         self.pp_name = 'data_livercropped'
-        
         self.input_df_name = 'info_df.pickle'
         self.pp_data_path = '{}/{}/'.format(self.root_dir, self.pp_name)
         self.pp_test_data_path = self.pp_data_path #change if test_data in separate folder.
 
-        # settings for deployment in cloud.
         if server_env:
-            # path to preprocessed data.
-#             self.pp_name = 'lidc_mdt_npz'
-            self.crop_name = 'pp_fg_slices_packed'
-#             self.pp_data_path = '/datasets/datasets_ramien/lidc_exp/data/{}'.format(self.pp_name)
             self.data_dest = '/content/'
+            self.root_dir = "/content/drive/My\' \'Drive/Thesis/Thesis/"
+            self.raw_data_dir = '{}/Dataset/data/'.format(self.root_dir)
+            self.raw_seg_dir = '{}/Dataset/seg/'.format(self.root_dir)
+            self.pp_data_path = '{}/data_pp'.format(self.root_dir)
             self.pp_test_data_path = self.pp_data_path
             self.select_prototype_subset = None
+            
 
         #########################
         #      Data Loader      #
