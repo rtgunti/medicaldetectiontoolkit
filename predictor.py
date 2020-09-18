@@ -65,7 +65,6 @@ class Predictor:
         # number of ensembled models. used to calculate the number of expected predictions per position
         # during consolidation of predictions. Default is 1 (no ensembling, e.g. in validation).
         self.n_ens = 1
-
         if self.mode == 'test':
             try:
                 self.epoch_ranking = np.load(os.path.join(self.cf.fold_dir, 'epoch_ranking.npy'))[:cf.test_n_epochs]
@@ -75,7 +74,6 @@ class Predictor:
             self.n_ens = cf.test_n_epochs
             if self.cf.test_aug:
                 self.n_ens *= 4
-
 
     def predict_patient(self, batch):
         """
@@ -248,7 +246,7 @@ class Predictor:
                     pids = [ii[1] for ii in fold_list]
                     boxes_list.append([ii[0] for ii in fold_list])
             list_of_results_per_patient = [[[[box for fold_list in boxes_list for box in fold_list[pix][0]
-                                              if box['box_type'] == 'det']], pid] for pix, pid in enumerate(pids)]
+                                              if box['box_type'] in ['det', 'gt']]], pid] for pix, pid in enumerate(pids)]
             da_factor = 4 if self.cf.test_aug else 1
             n_ens = self.cf.test_n_epochs * da_factor * len(self.cf.folds)
 

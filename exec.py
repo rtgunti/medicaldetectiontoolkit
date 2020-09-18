@@ -20,11 +20,13 @@ import argparse
 import os
 import time
 import torch
+import pickle
+import numpy as np
 
 import utils.exp_utils as utils
 from evaluator import Evaluator
 from predictor import Predictor
-from plotting import plot_batch_prediction
+from plotting import plot_batch_prediction, plot_test_prediction
 from torchsummary import summary
 
 
@@ -69,9 +71,12 @@ def train(logger):
         train_results_list = []
 
         for bix in range(cf.num_train_batches):
+            tic_nb = time.time()
             batch = next(batch_gen['train'])
+#             logger.info('nb_time {}'.format(time.time() - tic_nb))
             tic_fw = time.time()
             results_dict = net.train_forward(batch)
+#             logger.info('tic_fw {}'.format(time.time() - tic_fw))
             tic_bw = time.time()
             optimizer.zero_grad()
             results_dict['torch_loss'].backward()
@@ -106,30 +111,16 @@ def train(logger):
 
                 _, monitor_metrics['val'] = val_evaluator.evaluate_predictions(val_results_list, monitor_metrics['val'])
                 model_selector.run_model_selection(net, optimizer, monitor_metrics, epoch)
-                #######
-#             logger.info('train_loss : {0} train_dice_score : {1} train_dice_ap : {2} val_loss : {3} val_dice_score : {4} val_dice_ap : {5}'\
-#                         .format(monitor_metrics['train']['monitor_values'][epoch]))
-#             train_metrics = monitor_metrics['train']['monitor_values'][epoch]
-#             val_metrics = monitor_metrics['val']['monitor_values'][epoch]
-#             logger.info('train_loss : {0}'
-#                         .format(monitor_metrics['train']['monitor_values'][epoch]['loss']))
-                #######
+
             # update monitoring and prediction plots
             TrainingPlot.update_and_save(monitor_metrics, starting_epoch, epoch)
             epoch_time = time.time() - start_time
             logger.info('trained epoch {0:}: took {1:.2f} sec. ({2:.2f} train / {3:.2f} val)'.format(
                 epoch, epoch_time, train_time, epoch_time-train_time))
             batch = next(batch_gen['val_sampling'])
-#             batch = next(batch_gen['train'])
             results_dict = net.train_forward(batch, is_validation=True)
             logger.info('plotting predictions from validation sampling.')
             plot_batch_prediction(batch, results_dict, cf)
-
-#         #Additional Info when using cuda
-#         if device.type == 'cuda':
-#             print('Memory Usage:')
-#             print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
-#             print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
 
 def test(logger):
     """
@@ -141,6 +132,8 @@ def test(logger):
     test_evaluator = Evaluator(cf, logger, mode='test')
     batch_gen = data_loader.get_test_generator(cf, logger)
     test_results_list = test_predictor.predict_test_set(batch_gen, return_results=True)
+#     test_results_list = test_predictor.load_saved_predictions(apply_wbc=True)
+    plot_test_prediction(test_results_list, cf)#@rtgunti
     test_evaluator.evaluate_predictions(test_results_list)
     test_evaluator.score_test_df()
 
@@ -193,6 +186,7 @@ if __name__ == '__main__':
         
         model = utils.import_module('model', cf.model_path)
         data_loader = utils.import_module('dl', os.path.join(args.exp_dir, 'data_loader.py'))
+        cf.folds = range(cf.n_cv_splits)
         if folds is None:
             folds = range(cf.n_cv_splits)
 
@@ -224,7 +218,7 @@ if __name__ == '__main__':
         data_loader = utils.import_module('dl', os.path.join(args.exp_dir, 'data_loader.py'))
         if folds is None:
             folds = range(cf.n_cv_splits)
-
+        cf.folds = folds
         for fold in folds:
             cf.fold_dir = os.path.join(cf.exp_dir, 'fold_{}'.format(fold))
             logger = utils.get_logger(cf.fold_dir)
@@ -241,10 +235,13 @@ if __name__ == '__main__':
         logger = utils.get_logger(cf.exp_dir)
 
         if cf.hold_out_test_set:
+            data_loader = utils.import_module('dl', os.path.join(args.exp_dir, 'data_loader.py'))
             cf.folds = args.folds
             predictor = Predictor(cf, net=None, logger=logger, mode='analysis')
             results_list = predictor.load_saved_predictions(apply_wbc=True)
-            utils.create_csv_output(results_list, cf, logger)
+            results_dict = get_results_dict(results_list)
+            plot_test_prediction(results_list, cf)
+#             utils.create_csv_output(results_list, cf, logger)
 
         else:
             if folds is None:

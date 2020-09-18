@@ -274,8 +274,8 @@ class Evaluator():
 
                 if self.cf.plot_prediction_histograms:
                     out_filename = os.path.join(
-                        self.cf.plot_dir, 'pred_hist_{}_{}_{}_cl{}'.format(
-                            self.cf.fold, 'val' if 'val' in self.mode else self.mode, score_level, cl))
+                        self.cf.plot_dir, 'fold{}_{}_{}_{}'.format(
+                            self.cf.fold, 'val' if 'val' in self.mode else self.mode, self.cf.min_det_thresh, score_level))
                     type_list = None if score_level == 'patient' else spec_df.det_type.tolist()
                     plotting.plot_prediction_hist(spec_df.class_label.tolist(), spec_df.pred_score.tolist(), type_list, out_filename)
 
@@ -327,11 +327,14 @@ class Evaluator():
 
             with open(os.path.join(self.cf.exp_dir, 'results.txt'), 'a') as handle:
                 handle.write('\n****************************\n')
-                handle.write('\nresults for exp_dir : {} fold {} \n'.format(self.cf.exp_dir, self.cf.fold))
-                handle.write('\n****************************\n')
+                handle.write('results for exp_dir : {}\n'.format(self.cf.exp_dir))
+                handle.write('fold {} \n'.format(self.cf.fold))
+                handle.write('Conf. Threshold : {}\n'.format(self.cf.min_det_thresh))
+                handle.write('IoU Threshold : {}\n'.format(self.cf.ap_match_ious))
                 handle.write('\nfold df shape {}\n  \n'.format(self.test_df.shape))
                 for s in stats:
-                    handle.write('AUC {:0.4f}  AP {:0.4f} {} \n'.format(s['auc'], s['ap'], s['name']))
+                    handle.write('AP {:0.4f} {} \n'.format(s['ap'], s['name']))
+                handle.write('\n****************************\n')    
 
         fold_df_paths = [ii for ii in os.listdir(self.cf.exp_dir) if 'test_df.pickle' in ii]
         if len(fold_df_paths) == self.cf.n_cv_splits:

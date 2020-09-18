@@ -37,11 +37,16 @@ class configs(DefaultConfigs):
 #         self.pp_dir = '{}/data_pp_int'.format(self.root_dir)
         self.target_spacing = (1.0, 1.0, 2.25)
         
+        if server_env:
+            self.root_dir = "/content/drive/My\' \'Drive/Thesis/Thesis/"
+            self.raw_data_dir = '{}/Dataset/data/'.format(self.root_dir)
+            self.raw_seg_dir = '{}/Dataset/seg/'.format(self.root_dir)
+            self.pp_dir = '{}/data_pp'.format(self.root_dir)
 
         #########################
         #         I/O           #
-        #########################    
-        
+        #########################
+
 
         # one out of [2, 3]. dimension the model operates in.
         self.dim = 3
@@ -54,32 +59,31 @@ class configs(DefaultConfigs):
         # int [0 < dataset_size]. select n patients from dataset for prototyping. If None, all data is used.
         self.select_prototype_subset = None
         self.subset_ixs = None
+        self.subset_pids = None
         self.hold_out_test_set = True
-        self.test_subset_ixs = None
         self.data_dest = ''
 
         # path to preprocessed data.
         self.pp_name = 'data_pp'
 #         self.pp_name = 'data_pp_int'
 #         self.pp_name = 'data_livercropped'
+        
         self.input_df_name = 'info_df.pickle'
         self.pp_data_path = '{}/{}/'.format(self.root_dir, self.pp_name)
         self.pp_test_data_path = self.pp_data_path #change if test_data in separate folder.
-
+        # settings for deployment in cloud.
         if server_env:
+            # path to preprocessed data.
+#             self.pp_name = 'lidc_mdt_npz'
+            self.crop_name = 'pp_fg_slices_packed'
+#             self.pp_data_path = '/datasets/datasets_ramien/lidc_exp/data/{}'.format(self.pp_name)
             self.data_dest = '/content/'
-            self.root_dir = "/content/drive/My\' \'Drive/Thesis/Thesis/"
-            self.raw_data_dir = '{}/Dataset/data/'.format(self.root_dir)
-            self.raw_seg_dir = '{}/Dataset/seg/'.format(self.root_dir)
-            self.pp_data_path = '{}/data_pp'.format(self.root_dir)
             self.pp_test_data_path = self.pp_data_path
             self.select_prototype_subset = None
-            
 
         #########################
         #      Data Loader      #
         #########################
-
         # select modalities from preprocessed data
         self.channels = [0]
         self.n_channels = len(self.channels)
@@ -118,7 +122,7 @@ class configs(DefaultConfigs):
         self.start_filts = 48 if self.dim == 2 else 32
         self.end_filts = self.start_filts * 4 if self.dim == 2 else self.start_filts * 2
         self.res_architecture = 'resnet50' # 'resnet101' , 'resnet50'
-        self.norm = None # one of None, 'instance_norm', 'batch_norm'
+        self.norm = 'batch_norm' # one of None, 'instance_norm', 'batch_norm'
         self.weight_decay = 0 ## 
 
         # one of 'xavier_uniform', 'xavier_normal', or 'kaiming_normal', None (=default = 'kaiming_uniform')
@@ -148,10 +152,9 @@ class configs(DefaultConfigs):
         # set the top-n-epochs to be saved for temporal averaging in testing.
         self.save_n_models = 2
         self.test_n_epochs = 2
-        self.test_aug = True
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
-
+        self.test_aug = True
 #         self.report_score_level = ['patient', 'rois']  # choose list from 'patient', 'rois'
         self.report_score_level = ['rois']
 #         self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
@@ -162,7 +165,8 @@ class configs(DefaultConfigs):
 
 #         self.model_selection_criteria = ['malignant_ap', 'benign_ap'] # criteria to average over for saving epochs.
         self.model_selection_criteria = ['lesion_ap']
-        self.min_det_thresh = 0.1  # minimum confidence value to select predictions for evaluation.
+        self.min_det_thresh = 0.5  # minimum confidence value to select predictions for evaluation.
+        self.scan_det_thresh = False #analysis of the  hyper-parameter cf.min_det_thresh, for optimization on validation set. 
 
         # threshold for clustering predictions together (wcs = weighted cluster scoring).
         # needs to be >= the expected overlap of predictions coming from one model (typically NMS threshold).
@@ -272,7 +276,7 @@ class configs(DefaultConfigs):
         self.pyramid_levels = [0, 1, 2, 3]
 
         # number of feature maps in rpn. typically lowered in 3D to save gpu-memory.
-        self.n_rpn_features = 512 if self.dim == 2 else 64
+        self.n_rpn_features = 512 if self.dim == 2 else 128
 
         # anchor ratios and strides per position in feature maps.
         self.rpn_anchor_ratios = [0.5, 1, 2]

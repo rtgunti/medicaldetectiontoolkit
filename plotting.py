@@ -15,6 +15,7 @@
 # ==============================================================================
 
 import matplotlib
+import pandas as pd
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -22,7 +23,133 @@ import numpy as np
 import os
 from copy import deepcopy
 
+def plot_test_prediction(results_list, cf, outfile=None):
+    if outfile is None:
+        outfile = os.path.join(cf.plot_dir, 'test_example_{}.png'.format(cf.fold))
+    gt_bx_ct = 0
+    p_ids = [p_res[1] for p_res in results_list]
+    for p_ind, p_res in enumerate(results_list):
+        patient_ix = np.random.choice(len(results_list))
+        p_res = results_list[patient_ix]
+        p_id = p_res[1]
+        data = np.load(os.path.join(cf.pp_data_path, p_res[1] + '_img.npy'))[None]
+        segs = np.load(os.path.join(cf.pp_data_path, p_res[1] + '_rois.npy'))[None]
+        
+        data = np.transpose(data, axes=(3, 0, 1, 2))  # @rtgunti : (c, x, y, z) to (z, c, x, y)
+        segs = np.transpose(segs, axes=(3, 0, 1, 2))
+        gt_boxes = [box['box_coords'] for box in p_res[0][0] if box['box_type'] == 'gt']
+        if len(gt_boxes) > 0:
+            z_cuts = [np.max((int(gt_boxes[0][4]) - 5, 0)), np.min((int(gt_boxes[0][5]) + 5, data.shape[0]))]
+        else:
+            z_cuts = [data.shape[0]//2 - 5, int(data.shape[0]//2 + np.min([10, data.shape[0]//2]))]
+            
+        p_roi_results = p_res[0][0]
+        roi_results = [[] for _ in range(data.shape[0])]
+        
+        # iterate over cubes and spread across slices.
+        for box in p_roi_results:
+            b = box['box_coords']
+            # dismiss negative anchor slices.
+            slices = np.round(np.unique(np.clip(np.arange(b[4], b[5] + 1), 0, data.shape[0]-1)))
+            for s in slices:
+                roi_results[int(s)].append(box)
+                roi_results[int(s)][-1]['box_coords'] = b[:4]
 
+        roi_results = roi_results[z_cuts[0]: z_cuts[1]]
+        data = data[z_cuts[0]: z_cuts[1]]
+#         seg_preds = segs[z_cuts[0]: z_cuts[1]]
+        segs = segs[z_cuts[0]: z_cuts[1]]
+        seg_preds = np.zeros(segs.shape)
+        
+        p_id = [p_id] * data.shape[0]       
+
+        try:
+            # all dimensions except for the 'channel-dimension' are required to match
+            for i in [0, 2, 3]:
+                assert data.shape[i] == segs.shape[i] == seg_preds.shape[i]
+        except:
+            raise Warning('Shapes of arrays to plot not in agreement!'
+                          'Shapes {} vs. {} vs {}'.format(data.shape, segs.shape, seg_preds.shape))
+
+
+        show_arrays = np.concatenate([data, segs, seg_preds, data[:, 0][:, None]], axis=1).astype(float)
+        approx_figshape = (4 * show_arrays.shape[0], 4 * show_arrays.shape[1])
+        fig = plt.figure(figsize=approx_figshape)
+        gs = gridspec.GridSpec(show_arrays.shape[1] + 1, show_arrays.shape[0])
+        gs.update(wspace=0.1, hspace=0.1)
+        for b in range(show_arrays.shape[0]):
+            for m in range(show_arrays.shape[1]):
+
+                ax = plt.subplot(gs[m, b])
+                ax.axis('off')
+                if m < show_arrays.shape[1]:
+                    arr = show_arrays[b, m]
+    #             print(b, m, arr.shape)
+                if m < data.shape[1] or m == show_arrays.shape[1] - 1:
+                    cmap = 'gray'
+                    vmin = None
+                    vmax = None
+                else:
+                    cmap = None
+                    vmin = 0
+                    vmax = cf.num_seg_classes - 1
+
+                if m == 0:
+                        plt.title('{}'.format(p_id[b]), fontsize = 20)
+#                     plt.title('{}'.format(p_id[b][:10]), fontsize=20)
+
+                plt.imshow(arr, cmap=cmap, vmin=vmin, vmax=vmax)
+                if m >= (data.shape[1]):
+                    for box in roi_results[b]:
+                        if box['box_type'] != 'patient_tn_box': # don't plot true negative dummy boxes.
+                            coords = box['box_coords']
+                            if box['box_type'] == 'det':
+                                # dont plot background preds or low confidence boxes.
+                                if box['box_pred_class_id'] > 0 and box['box_score'] > cf.min_det_thresh:
+                                    plot_text = True
+                                    score = np.max(box['box_score'])
+                                    score_text = '{}|{:.0f}'.format(box['box_pred_class_id'], score*100)
+
+                                    # if prob detection: plot only boxes from correct sampling instance.
+                                    if 'sample_id' in box.keys() and int(box['sample_id']) != m - data.shape[1] - 2:
+                                        continue
+                                    # if prob detection: plot reconstructed boxes only in corresponding line.
+                                    if not 'sample_id' in box.keys() and  m != data.shape[1] + 1:
+                                        continue
+
+                                    score_font_size = 7
+                                    text_color = 'w'
+                                    text_x = coords[1] + 10*(box['box_pred_class_id'] -1) #avoid overlap of scores in plot.
+                                    text_y = coords[2] + 5
+                                else:
+                                    continue
+                            elif box['box_type'] == 'gt':
+                                plot_text = True
+                                score_text = int(box['box_label'])
+                                score_font_size = 7
+                                text_color = 'r'
+                                text_x = coords[1]
+                                text_y = coords[0] - 1
+                            else:
+                                plot_text = False
+
+                            color_var = 'extra_usage' if 'extra_usage' in list(box.keys()) else 'box_type'
+                            color = cf.box_color_palette[box[color_var]]
+                            plt.plot([coords[1], coords[3]], [coords[0], coords[0]], color=color, linewidth=1, alpha=1) # up
+                            plt.plot([coords[1], coords[3]], [coords[2], coords[2]], color=color, linewidth=1, alpha=1) # down
+                            plt.plot([coords[1], coords[1]], [coords[0], coords[2]], color=color, linewidth=1, alpha=1) # left
+                            plt.plot([coords[3], coords[3]], [coords[0], coords[2]], color=color, linewidth=1, alpha=1) # right
+                            if plot_text:
+                                plt.text(text_x, text_y, score_text, fontsize=score_font_size, color=text_color)
+
+        try:
+            plt.savefig(outfile)
+        except:
+            raise Warning('failed to save plot.')
+        plt.close(fig)
+        break
+
+        
 def plot_batch_prediction(batch, results_dict, cf, outfile= None):
     """
     plot the input images, ground truth annotations, and output predictions of a batch. If 3D batch, plots a 2D projection
@@ -44,13 +171,10 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
 
     seg_preds = results_dict['seg_preds']
     roi_results = deepcopy(results_dict['boxes'])
-#     print(type(roi_results))
-#     print(roi_results[0][0]['box_type'])
 
     # Randomly sampled one patient of batch and project data into 2D slices for plotting.
     if cf.dim == 3:
         patient_ix = np.random.choice(data.shape[0])
-#         print("patient_ix", patient_ix)
         data = np.transpose(data[patient_ix], axes=(3, 0, 1, 2))  # @rtgunti : (c, x, y, z) to (z, c, x, y)
         # select interesting foreground section to plot.
         gt_boxes = [box['box_coords'] for box in roi_results[patient_ix] if box['box_type'] == 'gt']
@@ -59,7 +183,6 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
             z_cuts = [np.max((int(gt_boxes[0][4]) - 5, 0)), np.min((int(gt_boxes[0][5]) + 5, data.shape[0]))]
         else:
             z_cuts = [data.shape[0]//2 - 5, int(data.shape[0]//2 + np.min([10, data.shape[0]//2]))]
-#         print("z_cuts : ", z_cuts)
         p_roi_results = roi_results[patient_ix]
         roi_results = [[] for _ in range(data.shape[0])]
 
@@ -88,8 +211,6 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
 
 
     show_arrays = np.concatenate([data, segs, seg_preds, data[:, 0][:, None]], axis=1).astype(float)
-#     print("Show Arrays Shape", show_arrays.shape)
-#     print(data.shape, segs.shape, seg_preds.shape, data[:, 0][:, None].shape)
     approx_figshape = (4 * show_arrays.shape[0], 4 * show_arrays.shape[1])
     fig = plt.figure(figsize=approx_figshape)
     gs = gridspec.GridSpec(show_arrays.shape[1] + 1, show_arrays.shape[0])
@@ -122,7 +243,7 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
                         coords = box['box_coords']
                         if box['box_type'] == 'det':
                             # dont plot background preds or low confidence boxes.
-                            if box['box_pred_class_id'] > 0 and box['box_score'] > 0.1:
+                            if box['box_pred_class_id'] > 0 and box['box_score'] > cf.min_det_thresh:
                                 plot_text = True
                                 score = np.max(box['box_score'])
                                 score_text = '{}|{:.0f}'.format(box['box_pred_class_id'], score*100)
@@ -248,7 +369,7 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
     preds = np.array(pred_list)
     labels = np.array(label_list)
     title = outfile.split('/')[-1] + ' count:{}'.format(len(label_list))
-    plt.figure()
+    fig = plt.figure()
     plt.yscale('log')
     if 0 in labels:
         plt.hist(preds[labels == 0], alpha=0.3, color='g', range=(0, 1), bins=50, label='false pos.')
@@ -266,16 +387,19 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
     plt.title(title)
     plt.xlabel('confidence score')
     plt.ylabel('log n')
-    plt.savefig(outfile)
+    plt.savefig(outfile + ".png")
     plt.close()
 
 
 def plot_stat_curves(stats, outfile):
 
-    for c in ['roc', 'prc']:
+#     for c in ['roc', 'prc']:
+    for c in ['prc']:
         plt.figure()
         for s in stats:
+#             print(s)
             if s[c] is not None:
+                print(s[c])
                 plt.plot(s[c][0], s[c][1], label=s['name'] + '_' + c)
         plt.title(outfile.split('/')[-1] + '_' + c)
         plt.legend(loc=3 if c == 'prc' else 4)
