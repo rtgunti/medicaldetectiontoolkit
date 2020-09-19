@@ -28,14 +28,14 @@ class configs(DefaultConfigs):
         #    Preprocessing      #
         #########################
         
-        self.data =["Thesis", "LiTS", "LIDC"]
+        self.data =["Thesis", "LiTS"]
         
         self.root_dir = '/home/jupyter-rgunti/data/{}'.format(self.data[0])
         self.raw_data_dir = '{}/data_raw/data/'.format(self.root_dir)
         self.raw_seg_dir = '{}/data_raw/seg/'.format(self.root_dir)
         self.pp_dir = '{}/data_pp'.format(self.root_dir)
-#         self.pp_dir = '{}/data_pp_int'.format(self.root_dir)
-        self.target_spacing = (1.0, 1.0, 2.25)
+#         self.pp_dir_int = '{}/data_pp_int'.format(self.root_dir)
+        self.target_spacing = (1.0, 1.0, 2.0)
         
         if server_env:
             self.root_dir = "/content/drive/My\' \'Drive/Thesis/Thesis/"
@@ -165,7 +165,7 @@ class configs(DefaultConfigs):
 
 #         self.model_selection_criteria = ['malignant_ap', 'benign_ap'] # criteria to average over for saving epochs.
         self.model_selection_criteria = ['lesion_ap']
-        self.min_det_thresh = 0.5  # minimum confidence value to select predictions for evaluation.
+        self.min_det_thresh = 0.1  # minimum confidence value to select predictions for evaluation.
         self.scan_det_thresh = False #analysis of the  hyper-parameter cf.min_det_thresh, for optimization on validation set. 
 
         # threshold for clustering predictions together (wcs = weighted cluster scoring).

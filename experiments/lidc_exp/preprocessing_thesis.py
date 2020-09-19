@@ -72,7 +72,7 @@ def pp_patient(inputs):
     mask_arr[mask_arr == 1] = 0
     mask_arr[mask_arr == 2] = 1
         
-    img_arr, mask_arr = resample_array(img_arr, mask_arr, img.header.get_zooms(), (1.0, 1.0, 2.0))
+    img_arr, mask_arr = resample_array(img_arr, mask_arr, img.header.get_zooms(), cf.target_spacing)
     
     print('Processing {}'.format(pid), img_arr.shape)
     img_arr = img_arr.astype(np.float32)
@@ -94,7 +94,7 @@ def pp_patient(inputs):
 
 def aggregate_meta_info(exp_dir):
 
-    files = [os.path.join(exp_dir, f) for f in os.listdir(exp_dir) if 'meta_info' in f]
+    files = sorted([os.path.join(exp_dir, f) for f in os.listdir(exp_dir) if 'meta_info' in f])
     df = pd.DataFrame(columns=['pid', 'class_target', 'fg_slices'])
     for f in files:
         with open(f, 'rb') as handle:

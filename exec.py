@@ -133,7 +133,7 @@ def test(logger):
     batch_gen = data_loader.get_test_generator(cf, logger)
     test_results_list = test_predictor.predict_test_set(batch_gen, return_results=True)
 #     test_results_list = test_predictor.load_saved_predictions(apply_wbc=True)
-    plot_test_prediction(test_results_list, cf)#@rtgunti
+#     plot_test_prediction(test_results_list, cf)#@rtgunti
     test_evaluator.evaluate_predictions(test_results_list)
     test_evaluator.score_test_df()
 

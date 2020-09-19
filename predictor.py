@@ -141,13 +141,10 @@ class Predictor:
             self.net.load_state_dict(torch.load(weight_path)['state_dict'])
             self.net.eval()
             self.rank_ix = str(rank_ix)  # get string of current rank for unique patch ids.
-#             print((batch_gen['n_test']))
             with torch.no_grad():
                 for _ in range(batch_gen['n_test']):
 
                     batch = next(batch_gen['test'])
-#                     print(batch['pid'])   
-#                     print(batch.keys())
                     # store batch info in patient entry of results dict.
                     if rank_ix == 0:
                         dict_of_patient_results[batch['pid']] = {}
@@ -247,6 +244,7 @@ class Predictor:
                     boxes_list.append([ii[0] for ii in fold_list])
             list_of_results_per_patient = [[[[box for fold_list in boxes_list for box in fold_list[pix][0]
                                               if box['box_type'] in ['det', 'gt']]], pid] for pix, pid in enumerate(pids)]
+#                                               if box['box_type'] == 'det']], pid] for pix, pid in enumerate(pids)]
             da_factor = 4 if self.cf.test_aug else 1
             n_ens = self.cf.test_n_epochs * da_factor * len(self.cf.folds)
 
