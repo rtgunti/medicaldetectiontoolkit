@@ -185,7 +185,7 @@ class Predictor:
             list_of_results_per_patient.append([results_dict['boxes'], pid])
 
         # save out raw predictions.
-        out_string = 'raw_pred_boxes_hold_out_list' if self.cf.hold_out_test_set else 'raw_pred_boxes_list'
+        out_string = 'raw_pred_boxes_' + self.cf.data_dest.split('/')[-2] if self.cf.data_dest else 'raw_pred_boxes'
         with open(os.path.join(self.cf.fold_dir, '{}.pickle'.format(out_string)), 'wb') as handle:
             pickle.dump(list_of_results_per_patient, handle)
 
@@ -238,7 +238,8 @@ class Predictor:
             boxes_list = []
             for fold in self.cf.folds:
                 fold_dir = os.path.join(self.cf.exp_dir, 'fold_{}'.format(fold))
-                with open(os.path.join(fold_dir, 'raw_pred_boxes_hold_out_list.pickle'), 'rb') as handle:
+                pred_box_file = 'raw_pred_boxes_' + self.cf.data_dest.split('/')[-2] if self.cf.data_dest else 'raw_pred_boxes'
+                with open(os.path.join(fold_dir, pred_box_file + '.pickle'), 'rb') as handle:
                     fold_list = pickle.load(handle)
                     pids = [ii[1] for ii in fold_list]
                     boxes_list.append([ii[0] for ii in fold_list])

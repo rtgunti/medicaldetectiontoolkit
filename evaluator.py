@@ -78,7 +78,7 @@ class Evaluator():
             pid_list = [item[1] for item in results_list]
 
         for match_iou in self.cf.ap_match_ious:
-            self.logger.info('evaluating with match_iou: {}'.format(match_iou))
+            self.logger.info('evaluating with conf_thresh: {} match_iou: {}'.format(self.cf.min_det_thresh, match_iou))
             for cl in list(self.cf.class_dict.keys()):
                 for pix, pid in enumerate(pid_list):
 
@@ -86,15 +86,34 @@ class Evaluator():
 
                     # input of each batch element is a list of boxes, where each box is a dictionary.
                     for bix, b_boxes_list in enumerate(batch_elements_list[pix]):
+                        
+                        b_tar_boxes = []
+                        b_cand_boxes = []
+                        b_cand_scores = []
+                        
+                        for box in b_boxes_list:
+                            if box['box_type'] == 'det' and box['box_score'] < self.cf.min_det_thresh:
+                                continue
+                            
+                            if (box['box_type'] == 'gt' and box['box_label'] == cl):
+                                b_tar_boxes.append(box['box_coords'])
+                            if (box['box_type'] == 'det' and box['box_pred_class_id'] == cl):
+                                b_cand_boxes.append(box['box_coords'])
+                            if (box['box_type'] == 'det' and box['box_pred_class_id'] == cl):
+                                b_cand_scores.append(box['box_score'])
+                        
+                        b_tar_boxes = np.array(b_tar_boxes)
+                        b_cand_boxes = np.array(b_cand_boxes)
+                        b_cand_scores = np.array(b_cand_scores)
 
-                        b_tar_boxes = np.array([box['box_coords'] for box in b_boxes_list if
-                                                (box['box_type'] == 'gt' and box['box_label'] == cl)])
-                        b_cand_boxes = np.array([box['box_coords'] for box in b_boxes_list if
-                                                 (box['box_type'] == 'det' and
-                                                  box['box_pred_class_id'] == cl)])
-                        b_cand_scores = np.array([box['box_score'] for box in b_boxes_list if
-                                                  (box['box_type'] == 'det' and
-                                                   box['box_pred_class_id'] == cl)])
+#                         b_tar_boxes = np.array([box['box_coords'] for box in b_boxes_list if
+#                                                 (box['box_type'] == 'gt' and box['box_label'] == cl)])
+#                         b_cand_boxes = np.array([box['box_coords'] for box in b_boxes_list if
+#                                                  (box['box_type'] == 'det' and
+#                                                   box['box_pred_class_id'] == cl)])
+#                         b_cand_scores = np.array([box['box_score'] for box in b_boxes_list if
+#                                                   (box['box_type'] == 'det' and
+#                                                    box['box_pred_class_id'] == cl)])
 
                         # check if predictions and ground truth boxes exist and match them according to match_iou.
                         if not 0 in b_cand_boxes.shape and not 0 in b_tar_boxes.shape:
@@ -221,7 +240,8 @@ class Evaluator():
                     # higher amounts of low confidence false positives.
                     stats_dict['auc'] = 0
                     stats_dict['roc'] = None
-                    stats_dict['prc'] = None
+#                     [print (ind, (x,y, z)) for ind, (x, y, z) in enumerate(zip(spec_df.class_label.tolist(), spec_df.det_type.tolist(), spec_df.pred_score.tolist()))]
+                    stats_dict['prc'] = precision_recall_curve(spec_df.class_label.tolist(), spec_df.pred_score.tolist())
 
                     # for the aggregated test set case, additionally get the scores for averaging over fold results.
                     if len(df.fold.unique()) > 1:
@@ -274,8 +294,12 @@ class Evaluator():
 
                 if self.cf.plot_prediction_histograms:
                     out_filename = os.path.join(
-                        self.cf.plot_dir, 'fold{}_{}_{}_{}'.format(
+                        self.cf.plot_dir, '{}_{}_{}_{}'.format(
                             self.cf.fold, 'val' if 'val' in self.mode else self.mode, self.cf.min_det_thresh, score_level))
+                    if self.cf.data_dest:
+                        out_filename += '_' + self.cf.data_dest.split('/')[-2]
+                    else:
+                        out_filename += '_' + self.cf.pp_name
                     type_list = None if score_level == 'patient' else spec_df.det_type.tolist()
                     plotting.plot_prediction_hist(spec_df.class_label.tolist(), spec_df.pred_score.tolist(), type_list, out_filename)
 
@@ -283,18 +307,13 @@ class Evaluator():
 
                 # analysis of the  hyper-parameter cf.min_det_thresh, for optimization on validation set.
                 if self.cf.scan_det_thresh:
-                    conf_threshs = list(np.arange(0.9, 1, 0.01))
+                    conf_threshs = list(np.arange(0.1, 1, 0.1))
                     pool = Pool(processes=10)
                     mp_inputs = [[spec_df, ii, self.cf.per_patient_ap] for ii in conf_threshs]
                     aps = pool.map(get_roi_ap_from_df, mp_inputs, chunksize=1)
                     pool.close()
                     pool.join()
-                    self.logger.info('results from scanning over det_threshs:', [[i, j] for i, j in zip(conf_threshs, aps)])
-
-        if self.cf.plot_stat_curves:
-            out_filename = os.path.join(self.cf.plot_dir, '{}_{}_stat_curves'.format(self.cf.fold, self.mode))
-            plotting.plot_stat_curves(all_stats, out_filename)
-
+                    self.logger.info('results from scanning over det_threshs:{}'.format([[i, j] for i, j in zip(conf_threshs, aps)]))
 
         # get average stats over foreground classes on roi level.
         avg_ap = np.mean([d['ap'] for d in all_stats if 'rois' in d['name']])
@@ -304,6 +323,12 @@ class Evaluator():
             all_stats[-1]['mean_ap'] = avg_mean_ap
             all_stats[-1]['mean_auc'] = 0
 
+        if self.cf.plot_stat_curves:
+            out_filename = os.path.join(self.cf.plot_dir, '{}_{}_{}_stat_curves'.format(self.cf.fold, self.mode, self.cf.min_det_thresh))
+            plotting.plot_stat_curves(all_stats, out_filename)  
+#             plotting.plot_pr_curve(all_stats, out_filename)
+            
+            
         # in small data sets, values of model_selection_criterion can be identical across epochs, wich breaks the
         # ranking of model_selector. Thus, pertube identical values by a neglectibale random term.
         for sc in self.cf.model_selection_criteria:
@@ -331,6 +356,7 @@ class Evaluator():
                 handle.write('fold {} \n'.format(self.cf.fold))
                 handle.write('Conf. Threshold : {}\n'.format(self.cf.min_det_thresh))
                 handle.write('IoU Threshold : {}\n'.format(self.cf.ap_match_ious))
+                handle.write('Data Dest : {}\n'.format(self.cf.data_dest))
                 handle.write('\nfold df shape {}\n  \n'.format(self.test_df.shape))
                 for s in stats:
                     handle.write('AP {:0.4f} {} \n'.format(s['ap'], s['name']))

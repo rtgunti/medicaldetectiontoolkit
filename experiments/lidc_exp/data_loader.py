@@ -93,21 +93,23 @@ def get_test_generator(cf, logger):
     """
     if cf.data_dest:
         pp_data_path = cf.data_dest
-        pp_data = cf.data_dest.split('/')[-2]
+        pp_name = cf.data_dest.split('/')[-2]
     else:
         pp_data_path = cf.pp_data_path
-        pp_data = cf.pp_data
-    all_data = load_dataset(cf, logger, pp_data_path, pp_data)
+        pp_name = cf.pp_name
+
+    all_data = load_dataset(cf, logger, pp_data_path = pp_data_path, pp_name = pp_name)
     all_pids_list = np.unique([v['pid'] for (k, v) in all_data.items()])
 
-    with open(os.path.join(cf.exp_dir, 'fold_ids.pickle'), 'rb') as handle:
-        fold_list = pickle.load(handle)
-    logger.warning('WARNING: using validation set for testing!!!')
-    _, test_ix, _, _ = fold_list[cf.fold]        
-
     if cf.subset_ixs:
+        logger.warning('WARNING: using subset_ixs set for testing')
         test_ix = cf.subset_ixs
-        
+    else:
+        with open(os.path.join(cf.exp_dir, 'fold_ids.pickle'), 'rb') as handle:
+            fold_list = pickle.load(handle)
+        logger.warning('WARNING: using validation set for testing!!!')
+        _, test_ix, _, _ = fold_list[cf.fold]        
+
     test_data = load_dataset(cf, logger, test_ix, pp_data_path=pp_data_path, pp_name=pp_name)
     logger.info("data set loaded with: {} test patients".format(len(test_ix)))
     logger.info(str([all_pids_list[i] for i in test_ix]))
@@ -116,6 +118,7 @@ def get_test_generator(cf, logger):
     batch_gen['n_test'] = len(test_ix) if cf.max_test_patients=="all" else \
         min(cf.max_test_patients, len(test_ix))
     return batch_gen
+
 
 
 def load_dataset(cf, logger, subset_ixs=None, pp_data_path=None, pp_name=None):
@@ -151,12 +154,8 @@ def load_dataset(cf, logger, subset_ixs=None, pp_data_path=None, pp_name=None):
         prototype_pids = p_df.pid.tolist()[:cf.select_prototype_subset]
         p_df = p_df[p_df.pid.isin(prototype_pids)]
         logger.warning('WARNING: using prototyping data subset!!!')
-
-    if subset_ixs is None:
-       subset_ixs = cf.subset_ixs
     
     if subset_ixs is not None:
-#         subset_pids = [np.unique(p_df.pid.tolist())[ix] for ix in cf.subset_ixs]
         subset_pids = [np.unique(p_df.pid.tolist())[ix] for ix in subset_ixs]
         p_df = p_df[p_df.pid.isin(subset_pids)]
         logger.info('subset: selected {} instances from df'.format(len(p_df)))

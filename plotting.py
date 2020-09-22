@@ -19,25 +19,37 @@ import pandas as pd
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import PrecisionRecallDisplay
+
 import numpy as np
 import os
 from copy import deepcopy
 
 def plot_test_prediction(results_list, cf, outfile=None):
+    if cf.data_dest:
+        pp_data_path = cf.data_dest if cf.data_dest else cf.pp_data_path
+    else:
+        pp_data_path = cf.pp_data_path
+        
     if outfile is None:
         outfile = os.path.join(cf.plot_dir, 'test_example_{}.png'.format(cf.fold))
     gt_bx_ct = 0
     p_ids = [p_res[1] for p_res in results_list]
     for p_ind, p_res in enumerate(results_list):
-        patient_ix = np.random.choice(len(results_list))
+#         patient_ix = np.random.choice(len(results_list))
+        patient_ix = p_ind
         p_res = results_list[patient_ix]
         p_id = p_res[1]
-        data = np.load(os.path.join(cf.pp_data_path, p_res[1] + '_img.npy'))[None]
-        segs = np.load(os.path.join(cf.pp_data_path, p_res[1] + '_rois.npy'))[None]
+        outfile = os.path.join(cf.plot_dir, 'test_example_{}.png'.format(p_id))
+        data = np.load(os.path.join(pp_data_path, p_res[1] + '_img.npy'))[None]
+        segs = np.load(os.path.join(pp_data_path, p_res[1] + '_rois.npy'))[None]
         
         data = np.transpose(data, axes=(3, 0, 1, 2))  # @rtgunti : (c, x, y, z) to (z, c, x, y)
         segs = np.transpose(segs, axes=(3, 0, 1, 2))
         gt_boxes = [box['box_coords'] for box in p_res[0][0] if box['box_type'] == 'gt']
+        print(data.shape, segs.shape, len(gt_boxes))
+        print(gt_boxes)
         if len(gt_boxes) > 0:
             z_cuts = [np.max((int(gt_boxes[0][4]) - 5, 0)), np.min((int(gt_boxes[0][5]) + 5, data.shape[0]))]
         else:
@@ -57,11 +69,12 @@ def plot_test_prediction(results_list, cf, outfile=None):
 
         roi_results = roi_results[z_cuts[0]: z_cuts[1]]
         data = data[z_cuts[0]: z_cuts[1]]
-#         seg_preds = segs[z_cuts[0]: z_cuts[1]]
         segs = segs[z_cuts[0]: z_cuts[1]]
         seg_preds = np.zeros(segs.shape)
         
-        p_id = [p_id] * data.shape[0]       
+#         p_id = [p_id] * data.shape[0]      
+        p_id = [p_id + '_' +str(z_cut) for z_cut in range(z_cuts[0], z_cuts[1])]
+        print(p_id)
 
         try:
             # all dimensions except for the 'channel-dimension' are required to match
@@ -73,7 +86,7 @@ def plot_test_prediction(results_list, cf, outfile=None):
 
 
         show_arrays = np.concatenate([data, segs, seg_preds, data[:, 0][:, None]], axis=1).astype(float)
-        approx_figshape = (4 * show_arrays.shape[0], 4 * show_arrays.shape[1])
+        approx_figshape = (5 * show_arrays.shape[0], 5 * show_arrays.shape[1])
         fig = plt.figure(figsize=approx_figshape)
         gs = gridspec.GridSpec(show_arrays.shape[1] + 1, show_arrays.shape[0])
         gs.update(wspace=0.1, hspace=0.1)
@@ -110,12 +123,12 @@ def plot_test_prediction(results_list, cf, outfile=None):
                                     score = np.max(box['box_score'])
                                     score_text = '{}|{:.0f}'.format(box['box_pred_class_id'], score*100)
 
-                                    # if prob detection: plot only boxes from correct sampling instance.
-                                    if 'sample_id' in box.keys() and int(box['sample_id']) != m - data.shape[1] - 2:
-                                        continue
-                                    # if prob detection: plot reconstructed boxes only in corresponding line.
-                                    if not 'sample_id' in box.keys() and  m != data.shape[1] + 1:
-                                        continue
+#                                     # if prob detection: plot only boxes from correct sampling instance.
+#                                     if 'sample_id' in box.keys() and int(box['sample_id']) != m - data.shape[1] - 2:
+#                                         continue
+#                                     # if prob detection: plot reconstructed boxes only in corresponding line.
+#                                     if not 'sample_id' in box.keys() and  m != data.shape[1] + 1:
+#                                         continue
 
                                     score_font_size = 7
                                     text_color = 'w'
@@ -147,7 +160,7 @@ def plot_test_prediction(results_list, cf, outfile=None):
         except:
             raise Warning('failed to save plot.')
         plt.close(fig)
-        break
+#         break
 
         
 def plot_batch_prediction(batch, results_dict, cf, outfile= None):
@@ -370,6 +383,7 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
     labels = np.array(label_list)
     title = outfile.split('/')[-1] + ' count:{}'.format(len(label_list))
     fig = plt.figure()
+#     ax = fig.add_axes([0,0,1,1])
     plt.yscale('log')
     if 0 in labels:
         plt.hist(preds[labels == 0], alpha=0.3, color='g', range=(0, 1), bins=50, label='false pos.')
@@ -381,7 +395,10 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
         fn_count = type_list.count('det_fn')
         tp_count = type_list.count('det_tp')
         pos_count = fn_count + tp_count
-        title += ' tp:{} fp:{} fn:{} pos:{}'. format(tp_count, fp_count, fn_count, pos_count)
+        precision = tp_count / (tp_count + fp_count)
+        recall = tp_count / pos_count
+        f1_score = 2*precision*recall/(precision + recall + 1.e-5)
+        title += ' tp:{} fp:{} fn:{} pos:{}\n precision:{:.3f} recall:{:.3f} f1_score:{:.3f}'. format(tp_count, fp_count, fn_count, pos_count, precision, recall, f1_score)
 
     plt.legend()
     plt.title(title)
@@ -390,20 +407,38 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
     plt.savefig(outfile + ".png")
     plt.close()
 
+def plot_pr_curve(stats, outfile):
+    print("Plotting Stat Curves")
+    for c in ['prc']:
+#         plt.figure()
+        for s in stats:
+            if s[c] is not None:
+                PrecisionRecallDisplay(precision = s[c][0], recall = s[c][1], average_precision = s['ap']).plot(label=s['name'] + '_' + c)
+            break
+        plt.title(outfile.split('/')[-1] + '_' + c + ' || AP : ' + str(np.round(s['ap'], 3)))
+        plt.legend(loc=3 if c == 'prc' else 4)
+        plt.ylabel('precision' if c == 'prc' else '1-spec.')
+        plt.xlabel('recall')
+        plt.xticks(np.arange(0,1.1,step = 0.1))
+        plt.yticks(np.arange(0,1.1,step = 0.1))
+        plt.savefig(outfile + 'x_' + c + '.png')
+        plt.close()
 
 def plot_stat_curves(stats, outfile):
 
 #     for c in ['roc', 'prc']:
+    print("Plotting Stat Curves")
     for c in ['prc']:
         plt.figure()
         for s in stats:
-#             print(s)
             if s[c] is not None:
-                print(s[c])
-                plt.plot(s[c][0], s[c][1], label=s['name'] + '_' + c)
-        plt.title(outfile.split('/')[-1] + '_' + c)
+                plt.plot(s[c][1], s[c][0], label=s['name'] + '_' + c )
+            break
+        plt.title(outfile.split('/')[-1] + '_' + c + ' || AP : ' + str(np.round(s['ap'], 3)))
         plt.legend(loc=3 if c == 'prc' else 4)
-        plt.xlabel('precision' if c == 'prc' else '1-spec.')
-        plt.ylabel('recall')
-        plt.savefig(outfile + '_' + c)
+        plt.ylabel('precision' if c == 'prc' else '1-spec.')
+        plt.xlabel('recall')
+        plt.xticks(np.arange(0,1.1,step = 0.1))
+        plt.yticks(np.arange(0,1.1,step = 0.1))
+        plt.savefig(outfile + '_' + c + '.png')
         plt.close()

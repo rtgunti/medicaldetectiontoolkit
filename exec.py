@@ -131,8 +131,8 @@ def test(logger):
     test_predictor = Predictor(cf, net, logger, mode='test')
     test_evaluator = Evaluator(cf, logger, mode='test')
     batch_gen = data_loader.get_test_generator(cf, logger)
-    test_results_list = test_predictor.predict_test_set(batch_gen, return_results=True)
-#     test_results_list = test_predictor.load_saved_predictions(apply_wbc=True)
+#     test_results_list = test_predictor.predict_test_set(batch_gen, return_results=True)
+    test_results_list = test_predictor.load_saved_predictions(apply_wbc=True)
 #     plot_test_prediction(test_results_list, cf)#@rtgunti
     test_evaluator.evaluate_predictions(test_results_list)
     test_evaluator.score_test_df()
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         if args.dev:
             folds = [0]
             cf.n_workers = 1
-            cf.select_prototype_subset = 2
+            cf.select_prototype_subset = 6
             cf.batch_size, cf.num_epochs, cf.min_save_thresh, cf.save_n_models = 3 if cf.dim==2 else 1, 2, 0, 2
             cf.num_train_batches, cf.num_val_batches, cf.max_val_patients = 2, 2, 2
             cf.test_n_epochs =  cf.save_n_models
@@ -213,7 +213,8 @@ if __name__ == '__main__':
             folds = [0,1]
             cf.test_n_epochs =  1; cf.max_test_patients = 1
 
-        cf.data_dest = args.data_dest
+        if args.data_dest:
+            cf.data_dest = args.data_dest
         model = utils.import_module('model', cf.model_path)
         data_loader = utils.import_module('dl', os.path.join(args.exp_dir, 'data_loader.py'))
         if folds is None:

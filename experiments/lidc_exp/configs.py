@@ -133,7 +133,7 @@ class configs(DefaultConfigs):
         #########################
 
         self.num_epochs = 1200
-        self.num_train_batches = 50 if self.dim == 2 else 50
+        self.num_train_batches = 50 if self.dim == 2 else 5
         self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 6
 
         self.do_validation = True if self.select_prototype_subset is None else False
@@ -143,7 +143,7 @@ class configs(DefaultConfigs):
         if self.val_mode == 'val_patient':
             self.max_val_patients = None  # if 'None' iterates over entire val_set once.
         if self.val_mode == 'val_sampling':
-            self.num_val_batches = 10
+            self.num_val_batches = 2
 
         #########################
         #   Testing / Plotting  #
@@ -151,10 +151,10 @@ class configs(DefaultConfigs):
 
         # set the top-n-epochs to be saved for temporal averaging in testing.
         self.save_n_models = 2
-        self.test_n_epochs = 2
+        self.test_n_epochs = 1
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
-        self.test_aug = True
+        self.test_aug = False
 #         self.report_score_level = ['patient', 'rois']  # choose list from 'patient', 'rois'
         self.report_score_level = ['rois']
 #         self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
