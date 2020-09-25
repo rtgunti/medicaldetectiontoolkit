@@ -100,7 +100,9 @@ class DefaultConfigs:
                                   'pos_class': 'yellow',
                                   'neg_class': 'purple',        
                                   'pos_anchor': 'green', 
-                                  'neg_anchor': 'orange'}
+                                  'neg_anchor': 'orange',
+                                      'tp_box': 'pink',
+                                      'fp_box' : 'pink2'}
 
         # scan over confidence score in evaluation to optimize it on the validation set.
         self.scan_det_thresh = False

@@ -141,6 +141,9 @@ def compute_class_loss(anchor_matches, class_pred_logits, shem_poolsize=20):
         pos_indices = pos_indices.squeeze(1)
         roi_logits_pos = class_pred_logits[pos_indices]
         targets_pos = anchor_matches[pos_indices]
+#         print("roi_logits_pos.shape, targets_pos.shape : ", roi_logits_pos.shape, targets_pos.shape)
+#         print("roi_logits_pos : ", roi_logits_pos)
+#         print("targets_pos : ", targets_pos)
         pos_loss = F.cross_entropy(roi_logits_pos, targets_pos.long())
     else:
         pos_loss = torch.FloatTensor([0]).cuda()
@@ -205,7 +208,9 @@ def refine_detections(anchors, probs, deltas, batch_ixs, cf):
     anchors = anchors.repeat(len(np.unique(batch_ixs)), 1)
 
     # flatten foreground probabilities, sort and trim down to highest confidences by pre_nms limit.
+#     print("probs.shape : ", probs.shape)
     fg_probs = probs[:, 1:].contiguous()
+#     print("fg_probs : ", fg_probs.shape)
     flat_probs, flat_probs_order = fg_probs.view(-1).sort(descending=True)
     keep_ix = flat_probs_order[:cf.pre_nms_limit]
     # reshape indices to 2D index array with shape like fg_probs.
@@ -300,6 +305,7 @@ def get_results(cf, img_shape, detections, seg_logits, box_results_list=None):
             boxes = detections[ix][:, :2 * cf.dim].astype(np.int32)
             class_ids = detections[ix][:, 2 * cf.dim + 1].astype(np.int32)
             scores = detections[ix][:, 2 * cf.dim + 2]
+            
 
             # Filter out detections with zero area. Often only happens in early
             # stages of training when the network weights are still a bit random.
@@ -313,7 +319,7 @@ def get_results(cf, img_shape, detections, seg_logits, box_results_list=None):
                 boxes = np.delete(boxes, exclude_ix, axis=0)
                 class_ids = np.delete(class_ids, exclude_ix, axis=0)
                 scores = np.delete(scores, exclude_ix, axis=0)
-
+            
             if 0 not in boxes.shape:
                 for ix2, score in enumerate(scores):
                     if score >= cf.model_min_confidence:
@@ -407,13 +413,16 @@ class net(nn.Module):
         
         shapes_debug = False
         if(shapes_debug):
-            print("GT Shape : ", gt_class_ids.shape, gt_boxes.shape)
-            print("gt_class_ids : ", gt_class_ids)
-            print("gt_boxes : ", gt_boxes)   
+            print("DEBUGGING SHAPES")
+            print("gt_class_ids : ", gt_class_ids.shape)
+            print("gt_class_ids vals : ", gt_class_ids)
+            print("gt_boxes : ", gt_boxes.shape)
+            print("gt_boxes vals : ", gt_boxes)   
             print("var_seg : ", var_seg.shape)
             print("var_seg_ohe : ", var_seg_ohe.shape)
             print("detections : ", detections.shape)
             print("class_logits : ", class_logits.shape)
+            print("class_logits vals : ", class_logits)
             print("pred_deltas : ", pred_deltas.shape)
 
         # loop over batch

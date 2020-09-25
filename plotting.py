@@ -31,16 +31,25 @@ def plot_test_prediction(results_list, cf, outfile=None):
         pp_data_path = cf.data_dest if cf.data_dest else cf.pp_data_path
     else:
         pp_data_path = cf.pp_data_path
-        
+    info_df_path = os.path.join(pp_data_path, 'info_df.pickle')
+    info_df = np.load(info_df_path)
+    if cf.subset_ixs:
+        p_ids = [info_df.pid[ix] for ix in cf.subset_ixs]
+    else:
+        p_ids = [p_res[1] for p_res in results_list]
+    print("p_ids : ", p_ids)
     if outfile is None:
         outfile = os.path.join(cf.plot_dir, 'test_example_{}.png'.format(cf.fold))
     gt_bx_ct = 0
-    p_ids = [p_res[1] for p_res in results_list]
+    
     for p_ind, p_res in enumerate(results_list):
 #         patient_ix = np.random.choice(len(results_list))
         patient_ix = p_ind
         p_res = results_list[patient_ix]
         p_id = p_res[1]
+        print(p_id)
+        if p_id not in p_ids:
+            continue
         outfile = os.path.join(cf.plot_dir, 'test_example_{}.png'.format(p_id))
         data = np.load(os.path.join(pp_data_path, p_res[1] + '_img.npy'))[None]
         segs = np.load(os.path.join(pp_data_path, p_res[1] + '_rois.npy'))[None]
@@ -48,8 +57,8 @@ def plot_test_prediction(results_list, cf, outfile=None):
         data = np.transpose(data, axes=(3, 0, 1, 2))  # @rtgunti : (c, x, y, z) to (z, c, x, y)
         segs = np.transpose(segs, axes=(3, 0, 1, 2))
         gt_boxes = [box['box_coords'] for box in p_res[0][0] if box['box_type'] == 'gt']
-        print(data.shape, segs.shape, len(gt_boxes))
-        print(gt_boxes)
+#         print(data.shape, segs.shape, len(gt_boxes))
+#         print(gt_boxes)
         if len(gt_boxes) > 0:
             z_cuts = [np.max((int(gt_boxes[0][4]) - 5, 0)), np.min((int(gt_boxes[0][5]) + 5, data.shape[0]))]
         else:
@@ -160,7 +169,6 @@ def plot_test_prediction(results_list, cf, outfile=None):
         except:
             raise Warning('failed to save plot.')
         plt.close(fig)
-#         break
 
         
 def plot_batch_prediction(batch, results_dict, cf, outfile= None):
@@ -396,7 +404,7 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
         tp_count = type_list.count('det_tp')
         pos_count = fn_count + tp_count
         precision = tp_count / (tp_count + fp_count)
-        recall = tp_count / pos_count
+        recall = tp_count / pos_count if pos_count else 1
         f1_score = 2*precision*recall/(precision + recall + 1.e-5)
         title += ' tp:{} fp:{} fn:{} pos:{}\n precision:{:.3f} recall:{:.3f} f1_score:{:.3f}'. format(tp_count, fp_count, fn_count, pos_count, precision, recall, f1_score)
 

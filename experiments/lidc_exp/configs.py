@@ -34,7 +34,7 @@ class configs(DefaultConfigs):
         self.raw_data_dir = '{}/data_raw/data/'.format(self.root_dir)
         self.raw_seg_dir = '{}/data_raw/seg/'.format(self.root_dir)
         self.pp_dir = '{}/data_pp'.format(self.root_dir)
-#         self.pp_dir_int = '{}/data_pp_int'.format(self.root_dir)
+        self.pp_dir_int = '{}/data_pp_int'.format(self.root_dir)
         self.target_spacing = (1.0, 1.0, 2.0)
         
         if server_env:
@@ -133,7 +133,7 @@ class configs(DefaultConfigs):
         #########################
 
         self.num_epochs = 1200
-        self.num_train_batches = 50 if self.dim == 2 else 5
+        self.num_train_batches = 50 if self.dim == 2 else 50
         self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 6
 
         self.do_validation = True if self.select_prototype_subset is None else False
@@ -143,15 +143,15 @@ class configs(DefaultConfigs):
         if self.val_mode == 'val_patient':
             self.max_val_patients = None  # if 'None' iterates over entire val_set once.
         if self.val_mode == 'val_sampling':
-            self.num_val_batches = 2
+            self.num_val_batches = 10
 
         #########################
         #   Testing / Plotting  #
         #########################
 
         # set the top-n-epochs to be saved for temporal averaging in testing.
-        self.save_n_models = 2
-        self.test_n_epochs = 1
+        self.save_n_models = 5
+        self.test_n_epochs = 2
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
         self.test_aug = False
@@ -174,7 +174,7 @@ class configs(DefaultConfigs):
         self.wcs_iou = 1e-5
 
         self.plot_prediction_histograms = True
-        self.plot_stat_curves = False
+        self.plot_stat_curves = True
 
         #########################
         #   Data Augmentation   #

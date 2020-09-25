@@ -240,9 +240,7 @@ if __name__ == '__main__':
             cf.folds = args.folds
             predictor = Predictor(cf, net=None, logger=logger, mode='analysis')
             results_list = predictor.load_saved_predictions(apply_wbc=True)
-            results_dict = get_results_dict(results_list)
-            plot_test_prediction(results_list, cf)
-#             utils.create_csv_output(results_list, cf, logger)
+            utils.create_csv_output(results_list, cf, logger)
 
         else:
             if folds is None:
