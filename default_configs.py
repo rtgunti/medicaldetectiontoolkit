@@ -139,7 +139,6 @@ class DefaultConfigs:
         self.return_masks_in_test = False # needed if doing instance segmentation. evaluation not yet implemented.
 
         # add P6 to Feature Pyramid Network.
-#         self.sixth_pooling = True
         self.sixth_pooling = False
 
         # for probabilistic detection

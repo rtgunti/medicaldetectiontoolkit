@@ -43,7 +43,6 @@ def plot_test_prediction(results_list, cf, outfile=None):
     gt_bx_ct = 0
     
     for p_ind, p_res in enumerate(results_list):
-#         patient_ix = np.random.choice(len(results_list))
         patient_ix = p_ind
         p_res = results_list[patient_ix]
         p_id = p_res[1]
@@ -57,8 +56,6 @@ def plot_test_prediction(results_list, cf, outfile=None):
         data = np.transpose(data, axes=(3, 0, 1, 2))  # @rtgunti : (c, x, y, z) to (z, c, x, y)
         segs = np.transpose(segs, axes=(3, 0, 1, 2))
         gt_boxes = [box['box_coords'] for box in p_res[0][0] if box['box_type'] == 'gt']
-#         print(data.shape, segs.shape, len(gt_boxes))
-#         print(gt_boxes)
         if len(gt_boxes) > 0:
             z_cuts = [np.max((int(gt_boxes[0][4]) - 5, 0)), np.min((int(gt_boxes[0][5]) + 5, data.shape[0]))]
         else:
@@ -83,7 +80,6 @@ def plot_test_prediction(results_list, cf, outfile=None):
         
 #         p_id = [p_id] * data.shape[0]      
         p_id = [p_id + '_' +str(z_cut) for z_cut in range(z_cuts[0], z_cuts[1])]
-        print(p_id)
 
         try:
             # all dimensions except for the 'channel-dimension' are required to match
@@ -106,7 +102,6 @@ def plot_test_prediction(results_list, cf, outfile=None):
                 ax.axis('off')
                 if m < show_arrays.shape[1]:
                     arr = show_arrays[b, m]
-    #             print(b, m, arr.shape)
                 if m < data.shape[1] or m == show_arrays.shape[1] - 1:
                     cmap = 'gray'
                     vmin = None
@@ -117,7 +112,7 @@ def plot_test_prediction(results_list, cf, outfile=None):
                     vmax = cf.num_seg_classes - 1
 
                 if m == 0:
-                        plt.title('{}'.format(p_id[b]), fontsize = 20)
+                    plt.title('{}'.format(p_id[b]), fontsize = 20)
 #                     plt.title('{}'.format(p_id[b][:10]), fontsize=20)
 
                 plt.imshow(arr, cmap=cmap, vmin=vmin, vmax=vmax)
@@ -232,6 +227,7 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
 
 
     show_arrays = np.concatenate([data, segs, seg_preds, data[:, 0][:, None]], axis=1).astype(float)
+#     print('show_arrays.shape : ', show_arrays.shape)
     approx_figshape = (4 * show_arrays.shape[0], 4 * show_arrays.shape[1])
     fig = plt.figure(figsize=approx_figshape)
     gs = gridspec.GridSpec(show_arrays.shape[1] + 1, show_arrays.shape[0])
@@ -294,6 +290,7 @@ def plot_batch_prediction(batch, results_dict, cf, outfile= None):
 
                         color_var = 'extra_usage' if 'extra_usage' in list(box.keys()) else 'box_type'
                         color = cf.box_color_palette[box[color_var]]
+#                         print("Color : ", color, box['box_type'])
                         plt.plot([coords[1], coords[3]], [coords[0], coords[0]], color=color, linewidth=1, alpha=1) # up
                         plt.plot([coords[1], coords[3]], [coords[2], coords[2]], color=color, linewidth=1, alpha=1) # down
                         plt.plot([coords[1], coords[1]], [coords[0], coords[2]], color=color, linewidth=1, alpha=1) # left

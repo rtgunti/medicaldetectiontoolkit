@@ -52,7 +52,7 @@ class configs(DefaultConfigs):
         self.dim = 3
 
         # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
-        self.model = 'retina_net'
+        self.model = 'mrcnn'
         
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
@@ -127,6 +127,7 @@ class configs(DefaultConfigs):
 
         # one of 'xavier_uniform', 'xavier_normal', or 'kaiming_normal', None (=default = 'kaiming_uniform')
         self.weight_init = None
+        self.pre_train_path = None   # Path to checkpoint of an experiment. Models loads only the matching keys from net.state_dict
 
         #########################
         #  Schedule / Selection #
@@ -134,7 +135,7 @@ class configs(DefaultConfigs):
 
         self.num_epochs = 1200
         self.num_train_batches = 50 if self.dim == 2 else 50
-        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 6
+        self.batch_size = 64 if self.dim == 2 else 1 if self.use_big_patch else 4
 
         self.do_validation = True if self.select_prototype_subset is None else False
         # decide whether to validate on entire patient volumes (like testing) or sampled patches (like training)
@@ -154,9 +155,8 @@ class configs(DefaultConfigs):
         self.test_n_epochs = 2
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
-        self.test_aug = False
-#         self.report_score_level = ['patient', 'rois']  # choose list from 'patient', 'rois'
-        self.report_score_level = ['rois']
+        self.test_aug = False 
+        self.report_score_level = ['rois'] # choose list from 'patient', 'rois'
 #         self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
         self.class_dict = {1: 'lesion'}  # 0 is background.
 #         self.patient_class_of_interest = 2  # patient metrics are only plotted for one class.
@@ -234,7 +234,6 @@ class configs(DefaultConfigs):
         # if <1, false positive predictions in foreground are penalized less.
         self.fp_dice_weight = 1 if self.dim == 2 else 1
 
-#         self.wce_weights = [1, 1, 1]
         self.wce_weights = [1, 1]
         self.detection_min_confidence = self.min_det_thresh
 
@@ -256,7 +255,6 @@ class configs(DefaultConfigs):
         self.n_plot_rpn_props = 5 if self.dim == 2 else 30
 
         # number of classes for head networks: n_foreground_classes + 1 (background)
-#         self.head_classes = 3
         self.head_classes = 2
 
         # seg_classes here refers to the first stage classifier (RPN)
@@ -265,18 +263,16 @@ class configs(DefaultConfigs):
         # feature map strides per pyramid level are inferred from architecture.
         #These values are just to calculate the feature map shaped. Not actually used in code
         self.backbone_strides = {'xy': [4, 8, 16, 32], 'z': [1, 2, 4, 8]}
-#         self.backbone_strides = {'xy': [1, 2, 4, 8], 'z': [1, 2, 4, 8]}
 
         # anchor scales are chosen according to expected object sizes in data set. Default uses only one anchor scale
         # per pyramid level. (outer list are pyramid levels (corresponding to BACKBONE_STRIDES), inner list are scales per level.)
         self.rpn_anchor_scales = {'xy': [[4], [16], [32], [64]], 'z': [[2], [4], [8], [16]]}
-#         self.rpn_anchor_scales = {'xy': [[8], [8], [8], [8]], 'z': [[8], [8], [8], [8]]}
 
         # choose which pyramid levels to extract features from: P2: 0, P3: 1, P4: 2, P5: 3.
         self.pyramid_levels = [0, 1, 2, 3]
 
         # number of feature maps in rpn. typically lowered in 3D to save gpu-memory.
-        self.n_rpn_features = 512 if self.dim == 2 else 128
+        self.n_rpn_features = 512 if self.dim == 2 else 64
 
         # anchor ratios and strides per position in feature maps.
         self.rpn_anchor_ratios = [0.5, 1, 2]
@@ -337,8 +333,7 @@ class configs(DefaultConfigs):
                  for stride, stride_z in zip(self.backbone_strides['xy'], self.backbone_strides['z']
                                              )])        
             
-        if self.model == 'ufrcnn':
-            self.operate_stride1 = True
+        if self.model == 'mrcnn':
             self.num_seg_classes = 2
             self.frcnn_mode = True
 
@@ -350,7 +345,7 @@ class configs(DefaultConfigs):
                                            self.rpn_anchor_scales['z']]
             self.n_anchors_per_pos = len(self.rpn_anchor_ratios) * 3
 
-            self.n_rpn_features = 256 if self.dim == 2 else 128
+            self.n_rpn_features = 256 if self.dim == 2 else 64
 
             # pre-selection of detections for NMS-speedup. per entire batch.
             self.pre_nms_limit = 10000 if self.dim == 2 else 50000
@@ -358,7 +353,6 @@ class configs(DefaultConfigs):
             # anchor matching iou is lower than in Mask R-CNN according to https://arxiv.org/abs/1708.02002
             self.anchor_matching_iou = 0.5
 
-            # if 'True', seg loss distinguishes all classes, else only foreground vs. background (class agnostic).
             self.num_seg_classes = 2
 
             if self.model == 'retina_unet':

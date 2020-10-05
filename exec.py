@@ -50,6 +50,9 @@ def train(logger):
     # prepare monitoring
     monitor_metrics, TrainingPlot = utils.prepare_monitoring(cf)
     print("length of monitor_metrics is ", len(monitor_metrics['train']['monitor_values']))
+    
+    if cf.pre_train_path:
+        utils.load_pre_trained_weights(cf.pre_train_path, net, optimizer, cf)
         
     if cf.resume_to_checkpoint:
         path_to_checkpoint = os.path.join(cf.exp_dir, ("fold_" + str(cf.fold)), cf.resume_to_checkpoint)
@@ -71,19 +74,11 @@ def train(logger):
         train_results_list = []
 
         for bix in range(cf.num_train_batches):
-            tic_nb = time.time()
             batch = next(batch_gen['train'])
-#             logger.info('nb_time {}'.format(time.time() - tic_nb))
-            tic_fw = time.time()
             results_dict = net.train_forward(batch)
-#             logger.info('tic_fw {}'.format(time.time() - tic_fw))
-            tic_bw = time.time()
             optimizer.zero_grad()
             results_dict['torch_loss'].backward()
             optimizer.step()
-#             logger.info('tr. batch {0}/{1} (ep. {2}) fw {3:.3f}s / bw {4:.3f}s / total {5:.3f}s || '
-#                         .format(bix + 1, cf.num_train_batches, epoch, tic_bw - tic_fw,
-#                                 time.time() - tic_bw, time.time() - tic_fw) + results_dict['logger_string'])
             logger.info('tr. (ep. {0}) batch {1:2}/{2} || '
                         .format(epoch, bix + 1, cf.num_train_batches) + results_dict['logger_string'])
             train_results_list.append([results_dict['boxes'], batch['pid']])
@@ -158,11 +153,15 @@ if __name__ == '__main__':
                         help='if resuming to checkpoint, the desired fold still needs to be parsed via --folds.')
     parser.add_argument('--exp_source', type=str, default='/path/to/experiment/source',
                         help='specifies, from which source experiment to load configs and data_loader.')
+    parser.add_argument('--pre_train_path',type=str, default=None, 
+                        help="full path to pretrained checkpoint")
     parser.add_argument('-d', '--dev', default=False, action='store_true', help="development mode: shorten everything")
+
 
     args = parser.parse_args()
     folds = args.folds
     resume_to_checkpoint = args.resume_to_checkpoint
+    pre_train_path = args.pre_train_path
     
     # setting device on GPU if available, else CPU
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -194,6 +193,7 @@ if __name__ == '__main__':
             cf.fold_dir = os.path.join(cf.exp_dir, 'fold_{}'.format(fold))
             cf.fold = fold
             cf.resume_to_checkpoint = resume_to_checkpoint
+            cf.pre_train_path = pre_train_path
             if not os.path.exists(cf.fold_dir):
                 os.mkdir(cf.fold_dir)
             logger = utils.get_logger(cf.fold_dir)

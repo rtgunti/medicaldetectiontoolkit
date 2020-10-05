@@ -32,7 +32,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils
 
-
+from torch.autograd import Variable
 ############################################################
 #  Network Heads
 ############################################################
@@ -123,6 +123,20 @@ class BBRegressor(nn.Module):
 #  Loss Functions
 ############################################################
 
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=0.5, gamma=2):
+        super(FocalLoss, self).__init__()
+        self.weight = torch.Tensor([alpha, 1-alpha]).cuda()
+        self.nllLoss = nn.NLLLoss(weight=self.weight)
+        self.gamma = gamma
+
+    def forward(self, input, target):
+        softmax = F.softmax(input, dim=1)
+        log_logits = torch.log(softmax)
+        fix_weights = (1 - softmax) ** self.gamma
+        logits = fix_weights * log_logits
+        return self.nllLoss(logits, target)
+    
 def compute_class_loss(anchor_matches, class_pred_logits, shem_poolsize=20):
     """
     :param anchor_matches: (n_anchors). [-1, 0, class_id] for negative, neutral, and positive matched anchors.
@@ -144,6 +158,7 @@ def compute_class_loss(anchor_matches, class_pred_logits, shem_poolsize=20):
 #         print("roi_logits_pos.shape, targets_pos.shape : ", roi_logits_pos.shape, targets_pos.shape)
 #         print("roi_logits_pos : ", roi_logits_pos)
 #         print("targets_pos : ", targets_pos)
+#         pos_loss = FocalLoss()(roi_logits_pos, targets_pos.long()).cuda()
         pos_loss = F.cross_entropy(roi_logits_pos, targets_pos.long())
     else:
         pos_loss = torch.FloatTensor([0]).cuda()
@@ -157,6 +172,7 @@ def compute_class_loss(anchor_matches, class_pred_logits, shem_poolsize=20):
         roi_probs_neg = F.softmax(roi_logits_neg, dim=1)
         neg_ix = mutils.shem(roi_probs_neg, negative_count, shem_poolsize)
         neg_loss = F.cross_entropy(roi_logits_neg[neg_ix], torch.LongTensor([0] * neg_ix.shape[0]).cuda())
+#         neg_loss = FocalLoss()(roi_logits_neg[neg_ix], torch.LongTensor([0] * neg_ix.shape[0]).cuda()).cuda()
         # return the indices of negative samples, which contributed to the loss (for monitoring plots).
         np_neg_ix = neg_ix.cpu().data.numpy()
     else:
@@ -233,7 +249,6 @@ def refine_detections(anchors, probs, deltas, batch_ixs, cf):
     refined_rois = mutils.clip_to_window(cf.window, refined_rois)
     pre_nms_rois = torch.round(refined_rois)
     for j, b in enumerate(mutils.unique1d(pre_nms_batch_ixs)):
-
         bixs = torch.nonzero(pre_nms_batch_ixs == b)[:, 0]
         bix_class_ids = pre_nms_class_ids[bixs]
         bix_rois = pre_nms_rois[bixs]
@@ -492,6 +507,165 @@ class net(nn.Module):
         return results_dict
 
 
+    def forward(self, img):
+        """
+        forward pass of the model.
+        :param img: input img (b, c, y, x, (z)).
+        :return: rpn_pred_logits: (b, n_anchors, 2)
+        :return: rpn_pred_deltas: (b, n_anchors, (y, x, (z), log(h), log(w), (log(d))))
+        :return: batch_proposal_boxes: (b, n_proposals, (y1, x1, y2, x2, (z1), (z2), batch_ix)) only for monitoring/plotting.
+        :return: detections: (n_final_detections, (y1, x1, y2, x2, (z1), (z2), batch_ix, pred_class_id, pred_score)
+        :return: detection_masks: (n_final_detections, n_classes, y, x, (z)) raw molded masks as returned by mask-head.
+        """
+        # Feature extraction
+        fpn_outs = self.Fpn(img)
+        seg_logits = None
+        selected_fmaps = [fpn_outs[i] for i in self.cf.pyramid_levels]
+
+        # Loop through pyramid layers
+        class_layer_outputs, bb_reg_layer_outputs = [], []  # list of lists
+        for p in selected_fmaps:
+            class_layer_outputs.append(self.Classifier(p))
+            bb_reg_layer_outputs.append(self.BBRegressor(p))
+
+        # Concatenate layer outputs
+        # Convert from list of lists of level outputs to list of lists
+        # of outputs across levels.
+        # e.g. [[a1, b1, c1], [a2, b2, c2]] => [[a1, a2], [b1, b2], [c1, c2]]
+        class_logits = list(zip(*class_layer_outputs))
+        class_logits = [torch.cat(list(o), dim=1) for o in class_logits][0]
+        bb_outputs = list(zip(*bb_reg_layer_outputs))
+        bb_outputs = [torch.cat(list(o), dim=1) for o in bb_outputs][0]
+
+        # merge batch_dimension and store info in batch_ixs for re-allocation.
+        batch_ixs = torch.arange(class_logits.shape[0]).unsqueeze(1).repeat(1, class_logits.shape[1]).view(-1).cuda()
+        flat_class_softmax = F.softmax(class_logits.view(-1, class_logits.shape[-1]), 1)
+        flat_bb_outputs = bb_outputs.view(-1, bb_outputs.shape[-1])
+        detections = refine_detections(self.anchors, flat_class_softmax, flat_bb_outputs, batch_ixs, self.cf)
+
+        return detections, class_logits, bb_outputs, seg_logits
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+############################################################
+#  Final Classification Class
+############################################################
+class FClassifier(nn.Module):
+
+
+    def __init__(self, cf, conv):
+        """
+        Builds the classifier sub-network.
+        """
+        super(Classifier, self).__init__()
+        self.dim = conv.dim
+        self.n_classes = cf.head_classes
+        n_input_channels = cf.end_filts
+        n_features = cf.n_rpn_features
+        n_output_channels = cf.n_anchors_per_pos * cf.head_classes
+        anchor_stride = cf.rpn_anchor_stride
+
+        self.conv_1 = conv(n_input_channels, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_2 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride, pad=1, relu=None)
+
+
+    def forward(self, x):
+        """
+        :param x: input feature map (b, in_c, y, x, (z))
+        :return: class_logits (b, n_anchors, n_classes)
+        """
+        x = self.conv_1(x)
+        x = self.conv_2(x)
+        x = self.conv_3(x)
+        x = self.conv_4(x)
+        class_logits = self.conv_final(x)
+
+        axes = (0, 2, 3, 1) if self.dim == 2 else (0, 2, 3, 4, 1)
+        class_logits = class_logits.permute(*axes)
+        class_logits = class_logits.contiguous()
+        class_logits = class_logits.view(x.size()[0], -1, self.n_classes)
+
+        return [class_logits]
+
+
+class net_f(nn.Module):
+
+
+    def __init__(self, cf, logger):
+
+        super(net, self).__init__()
+        self.cf = cf
+        self.logger = logger
+        self.build()
+        if self.cf.weight_init is not None:
+            logger.info("using pytorch weight init of type {}".format(self.cf.weight_init))
+            mutils.initialize_weights(self)
+        else:
+            logger.info("using default pytorch weight init for Class Head")
+
+    def build(self):
+        """
+        Build Final Classifier Head
+        """
+
+        # Image size must be dividable by 2 multiple times.
+        h, w = self.cf.patch_size[:2]
+        if h / 2 ** 5 != int(h / 2 ** 5) or w / 2 ** 5 != int(w / 2 ** 5):
+            raise Exception("Image size must be dividable by 2 at least 5 times "
+                            "to avoid fractions when downscaling and upscaling."
+                            "For example, use 256, 320, 384, 448, 512, ... etc. ")
+
+        # instanciate abstract multi dimensional conv class and backbone model.
+        conv = mutils.NDConvGenerator(self.cf.dim)
+
+        self.Classifier = Classifier(self.cf, conv)
+        
+    def train_forward(self, batch, **kwargs):
+        '''
+        train method (also used for validation monitoring). wrapper around forward pass of network. prepares input data
+        for processing, computes losses, and stores outputs in a dictionary.
+        :param batch: dictionary containing 'data', 'seg', etc.
+        :param results_dict : initial results_dict
+        :return: results_dict: dictionary with keys:
+                'boxes': list over batch elements. each batch element is a list of boxes. each box is a dictionary:
+                        [[{box_0}, ... {box_n}], [{box_0}, ... {box_n}], ...]
+                'seg_preds': pixelwise segmentation output (b, c, y, x, (z)) with values [0, .., n_classes].
+                'monitor_values': dict of values to be monitored.        
+        '''
+        img = batch['data']
+        gt_class_ids = batch['roi_labels']
+        gt_boxes = batch['bb_target']        
+        
+        
+        img = torch.from_numpy(img).float().cuda()
+        batch_class_loss = torch.FloatTensor([0]).cuda()
+
+        # list of output boxes for monitoring/plotting. each element is a list of boxes per batch element.
+        box_results_list = [[] for _ in range(img.shape[0])]
+        detections, class_logits, pred_deltas, seg_logits = self.forward(img)
+        
     def forward(self, img):
         """
         forward pass of the model.

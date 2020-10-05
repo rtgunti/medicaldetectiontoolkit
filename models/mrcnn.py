@@ -844,10 +844,10 @@ class net(nn.Module):
         # build Anchors, FPN, RPN, Classifier / Bbox-Regressor-head, Mask-head
         self.np_anchors = mutils.generate_pyramid_anchors(self.logger, self.cf)
         self.anchors = torch.from_numpy(self.np_anchors).float().cuda()
-        self.fpn = backbone.FPN(self.cf, conv)
-        self.rpn = RPN(self.cf, conv)
-        self.classifier = Classifier(self.cf, conv)
-        self.mask = Mask(self.cf, conv)
+        self.Fpn = backbone.FPN(self.cf, conv)
+        self.Rpn = RPN(self.cf, conv)
+        self.Classifier = Classifier(self.cf, conv)
+        self.Mask = Mask(self.cf, conv)
 
 
     def train_forward(self, batch, is_validation=False):
@@ -993,14 +993,15 @@ class net(nn.Module):
         :return: detection_masks: (n_final_detections, n_classes, y, x, (z)) raw molded masks as returned by mask-head.
         """
         # extract features.
-        fpn_outs = self.fpn(img)
+        with torch.no_grad():
+            fpn_outs = self.Fpn(img)
         rpn_feature_maps = [fpn_outs[i] for i in self.cf.pyramid_levels]
         self.mrcnn_feature_maps = rpn_feature_maps
 
         # loop through pyramid layers and apply RPN.
         layer_outputs = []  # list of lists
         for p in rpn_feature_maps:
-            layer_outputs.append(self.rpn(p))
+            layer_outputs.append(self.Rpn(p))
 
         # concatenate layer outputs.
         # convert from list of lists of level outputs to list of lists of outputs across levels.
@@ -1026,7 +1027,7 @@ class net(nn.Module):
         class_logits_list, bboxes_list = [], []
         with torch.no_grad():
             for chunk in chunked_rpn_rois:
-                chunk_class_logits, chunk_bboxes = self.classifier(self.mrcnn_feature_maps, chunk)
+                chunk_class_logits, chunk_bboxes = self.Classifier(self.mrcnn_feature_maps, chunk)
                 class_logits_list.append(chunk_class_logits)
                 bboxes_list.append(chunk_bboxes)
         batch_mrcnn_class_logits = torch.cat(class_logits_list, 0)
@@ -1043,7 +1044,7 @@ class net(nn.Module):
 
         detection_boxes = detections[:, :self.cf.dim * 2 + 1] / scale
         with torch.no_grad():
-            detection_masks = self.mask(self.mrcnn_feature_maps, detection_boxes)
+            detection_masks = self.Mask(self.mrcnn_feature_maps, detection_boxes)
 
         return [rpn_pred_logits, rpn_pred_deltas, batch_proposal_boxes, detections, detection_masks]
 
@@ -1071,8 +1072,8 @@ class net(nn.Module):
         # re-use feature maps and RPN output from first forward pass.
         sample_proposals = self.rpn_rois_batch_info[sample_ix]
         if 0 not in sample_proposals.size():
-            sample_logits, sample_boxes = self.classifier(self.mrcnn_feature_maps, sample_proposals)
-            sample_mask = self.mask(self.mrcnn_feature_maps, sample_proposals)
+            sample_logits, sample_boxes = self.Classifier(self.mrcnn_feature_maps, sample_proposals)
+            sample_mask = self.Mask(self.mrcnn_feature_maps, sample_proposals)
         else:
             sample_logits = torch.FloatTensor().cuda()
             sample_boxes = torch.FloatTensor().cuda()

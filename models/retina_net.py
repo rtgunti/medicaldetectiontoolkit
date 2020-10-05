@@ -32,7 +32,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils
 
-
+from torch.autograd import Variable
 ############################################################
 #  Network Heads
 ############################################################
@@ -123,6 +123,20 @@ class BBRegressor(nn.Module):
 #  Loss Functions
 ############################################################
 
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=0.5, gamma=2):
+        super(FocalLoss, self).__init__()
+        self.weight = torch.Tensor([alpha, 1-alpha]).cuda()
+        self.nllLoss = nn.NLLLoss(weight=self.weight)
+        self.gamma = gamma
+
+    def forward(self, input, target):
+        softmax = F.softmax(input, dim=1)
+        log_logits = torch.log(softmax)
+        fix_weights = (1 - softmax) ** self.gamma
+        logits = fix_weights * log_logits
+        return self.nllLoss(logits, target)
+    
 def compute_class_loss(anchor_matches, class_pred_logits, shem_poolsize=20):
     """
     :param anchor_matches: (n_anchors). [-1, 0, class_id] for negative, neutral, and positive matched anchors.
@@ -144,6 +158,7 @@ def compute_class_loss(anchor_matches, class_pred_logits, shem_poolsize=20):
 #         print("roi_logits_pos.shape, targets_pos.shape : ", roi_logits_pos.shape, targets_pos.shape)
 #         print("roi_logits_pos : ", roi_logits_pos)
 #         print("targets_pos : ", targets_pos)
+#         pos_loss = FocalLoss()(roi_logits_pos, targets_pos.long()).cuda()
         pos_loss = F.cross_entropy(roi_logits_pos, targets_pos.long())
     else:
         pos_loss = torch.FloatTensor([0]).cuda()
@@ -157,6 +172,7 @@ def compute_class_loss(anchor_matches, class_pred_logits, shem_poolsize=20):
         roi_probs_neg = F.softmax(roi_logits_neg, dim=1)
         neg_ix = mutils.shem(roi_probs_neg, negative_count, shem_poolsize)
         neg_loss = F.cross_entropy(roi_logits_neg[neg_ix], torch.LongTensor([0] * neg_ix.shape[0]).cuda())
+#         neg_loss = FocalLoss()(roi_logits_neg[neg_ix], torch.LongTensor([0] * neg_ix.shape[0]).cuda()).cuda()
         # return the indices of negative samples, which contributed to the loss (for monitoring plots).
         np_neg_ix = neg_ix.cpu().data.numpy()
     else:
@@ -233,7 +249,6 @@ def refine_detections(anchors, probs, deltas, batch_ixs, cf):
     refined_rois = mutils.clip_to_window(cf.window, refined_rois)
     pre_nms_rois = torch.round(refined_rois)
     for j, b in enumerate(mutils.unique1d(pre_nms_batch_ixs)):
-
         bixs = torch.nonzero(pre_nms_batch_ixs == b)[:, 0]
         bix_class_ids = pre_nms_class_ids[bixs]
         bix_rois = pre_nms_rois[bixs]

@@ -92,8 +92,8 @@ class Evaluator():
                         b_cand_scores = []
                         
                         for box in b_boxes_list:
-#                             if box['box_type'] == 'det' and box['box_score'] < self.cf.min_det_thresh:
-#                                 continue
+                            if box['box_type'] == 'det' and box['box_score'] < self.cf.min_det_thresh:
+                                continue
                             
                             if (box['box_type'] == 'gt' and box['box_label'] == cl):
                                 b_tar_boxes.append(box['box_coords'])
