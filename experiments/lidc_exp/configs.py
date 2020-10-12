@@ -34,8 +34,9 @@ class configs(DefaultConfigs):
         self.raw_data_dir = '{}/data_raw/data/'.format(self.root_dir)
         self.raw_seg_dir = '{}/data_raw/seg/'.format(self.root_dir)
         self.pp_dir = '{}/data_pp'.format(self.root_dir)
+        self.pp_dir_wocrop = '{}/data_pp_wocrop'.format(self.root_dir)
         self.pp_dir_int = '{}/data_pp_int'.format(self.root_dir)
-        self.target_spacing = (1.0, 1.0, 2.0)
+        self.target_spacing = (1.0, 1.0, 2.5)
         
         if server_env:
             self.root_dir = "/content/drive/My\' \'Drive/Thesis/Thesis/"
@@ -64,9 +65,9 @@ class configs(DefaultConfigs):
         self.data_dest = ''
 
         # path to preprocessed data.
-        self.pp_name = 'data_pp'
+#         self.pp_name = 'data_pp'
 #         self.pp_name = 'data_pp_int'
-#         self.pp_name = 'data_livercropped'
+        self.pp_name = 'data_pp_wocrop'
         
         self.input_df_name = 'info_df.pickle'
         self.pp_data_path = '{}/{}/'.format(self.root_dir, self.pp_name)
@@ -189,7 +190,7 @@ class configs(DefaultConfigs):
         'angle_y': (0., 0),
         'angle_z': (0., 0),
         'do_scale': True,
-        'scale':(0.8, 1.1),
+        'scale':(0.8, 1.2),
         'random_crop':True,
         'rand_crop_dist':  (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3),
         'border_mode_data': 'constant',
@@ -337,7 +338,7 @@ class configs(DefaultConfigs):
             self.num_seg_classes = 2
             self.frcnn_mode = True
 
-        if self.model == 'retina_net' or self.model == 'retina_unet' or self.model == 'prob_detector':
+        if self.model == 'retina_net' or self.model == 'retina_unet' or self.model == 'prob_detector' or self.model == 'mrcnn':
             # implement extra anchor-scales according to retina-net publication.
             self.rpn_anchor_scales['xy'] = [[ii[0], ii[0] * (2 ** (1 / 3)), ii[0] * (2 ** (2 / 3))] for ii in
                                             self.rpn_anchor_scales['xy']]

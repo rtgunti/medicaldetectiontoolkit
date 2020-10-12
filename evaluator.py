@@ -94,7 +94,6 @@ class Evaluator():
                         for box in b_boxes_list:
                             if box['box_type'] == 'det' and box['box_score'] < self.cf.min_det_thresh:
                                 continue
-                            
                             if (box['box_type'] == 'gt' and box['box_label'] == cl):
                                 b_tar_boxes.append(box['box_coords'])
                             if (box['box_type'] == 'det' and box['box_pred_class_id'] == cl):
@@ -104,15 +103,6 @@ class Evaluator():
                         b_tar_boxes = np.array(b_tar_boxes)
                         b_cand_boxes = np.array(b_cand_boxes)
                         b_cand_scores = np.array(b_cand_scores)
-
-#                         b_tar_boxes = np.array([box['box_coords'] for box in b_boxes_list if
-#                                                 (box['box_type'] == 'gt' and box['box_label'] == cl)])
-#                         b_cand_boxes = np.array([box['box_coords'] for box in b_boxes_list if
-#                                                  (box['box_type'] == 'det' and
-#                                                   box['box_pred_class_id'] == cl)])
-#                         b_cand_scores = np.array([box['box_score'] for box in b_boxes_list if
-#                                                   (box['box_type'] == 'det' and
-#                                                    box['box_pred_class_id'] == cl)])
 
                         # check if predictions and ground truth boxes exist and match them according to match_iou.
                         if not 0 in b_cand_boxes.shape and not 0 in b_tar_boxes.shape:
@@ -239,7 +229,6 @@ class Evaluator():
                     # higher amounts of low confidence false positives.
                     stats_dict['auc'] = 0
                     stats_dict['roc'] = None
-#                     [print (ind, (x,y, z)) for ind, (x, y, z) in enumerate(zip(spec_df.class_label.tolist(), spec_df.det_type.tolist(), spec_df.pred_score.tolist()))]
                     stats_dict['prc'] = precision_recall_curve(spec_df.class_label.tolist(), spec_df.pred_score.tolist())
 
                     # for the aggregated test set case, additionally get the scores for averaging over fold results.
@@ -325,7 +314,7 @@ class Evaluator():
         if self.cf.plot_stat_curves:
             out_filename = os.path.join(self.cf.plot_dir, '{}_{}_{}_stat_curves'.format(self.cf.fold, self.mode, self.cf.min_det_thresh))
             plotting.plot_stat_curves(all_stats, out_filename)  
-#             plotting.plot_pr_curve(all_stats, out_filename)
+            plotting.plot_pr_curve(all_stats, out_filename)
             
             
         # in small data sets, values of model_selection_criterion can be identical across epochs, wich breaks the

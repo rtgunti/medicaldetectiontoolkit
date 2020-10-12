@@ -57,6 +57,7 @@ class Classifier(nn.Module):
         self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
         self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
         self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride, pad=1, relu=None)
+        print("Retina Net Out channels :", n_output_channels)
 
 
     def forward(self, x):
@@ -124,7 +125,7 @@ class BBRegressor(nn.Module):
 ############################################################
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.5, gamma=2):
+    def __init__(self, alpha=0.25, gamma=2):
         super(FocalLoss, self).__init__()
         self.weight = torch.Tensor([alpha, 1-alpha]).cuda()
         self.nllLoss = nn.NLLLoss(weight=self.weight)

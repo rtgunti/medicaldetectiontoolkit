@@ -36,7 +36,114 @@ import torch.utils
 ############################################################
 # Networks on top of backbone
 ############################################################
+class RPN_SharedConv(nn.Module):
+    '''
+    Shared Convolutions for RPN
+    '''
+    def __init__(self, cf, conv):
 
+        super(RPN_SharedConv, self).__init__()
+        self.dim = conv.dim
+        n_output_channels = cf.n_anchors_per_pos * cf.head_classes
+        n_features = cf.n_rpn_features
+        anchor_stride = cf.rpn_anchor_stride
+        self.conv_shared = conv(cf.end_filts, cf.n_rpn_features, ks=3, stride=cf.rpn_anchor_stride, pad=1, relu=cf.relu)
+
+    def forward(self, x):
+        """
+        :param x: input feature maps (b, in_channels, y, x, (z))
+        :return: rpn_class_logits (b, 2, n_anchors)
+        :return: rpn_probs_logits (b, 2, n_anchors)
+        :return: rpn_bbox (b, 2 * dim, n_anchors)
+        """
+        x = self.conv_shared(x)
+        return [x]
+        
+class RPN_Classifier(nn.Module):
+    '''
+    Classifier head for RPN
+    '''
+    def __init__(self, cf, conv):
+        """
+        Builds the classifier sub-network.
+        """
+        super(RPN_Classifier, self).__init__()
+        self.dim = conv.dim
+        self.n_classes = cf.head_classes
+        n_input_channels = cf.end_filts
+        n_features = cf.n_rpn_features
+        n_output_channels = cf.n_anchors_per_pos * cf.head_classes
+        anchor_stride = cf.rpn_anchor_stride
+
+        self.conv_1 = conv(n_input_channels, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_2 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride, pad=1, relu=None)
+
+    def forward(self, x):
+        """
+        :param x: input feature map (b, in_c, y, x, (z))
+        :return: class_logits (b, n_anchors, n_classes)
+        """
+        x = self.conv_1(x)
+        x = self.conv_2(x)
+        x = self.conv_3(x)
+        x = self.conv_4(x)
+        class_logits = self.conv_final(x)
+
+        axes = (0, 2, 3, 1) if self.dim == 2 else (0, 2, 3, 4, 1)
+        class_logits = class_logits.permute(*axes)
+        class_logits = class_logits.contiguous()
+        class_logits = class_logits.view(x.size()[0], -1, self.n_classes)
+        
+        # Softmax on last dimension (fg vs. bg).
+        class_probs = F.softmax(class_logits, dim=2)
+
+        return [class_logits, class_probs]
+
+
+class RPN_BBRegressor(nn.Module):
+    '''
+    Regressor head for RPN
+    '''
+    def __init__(self, cf, conv):
+        """
+        Builds the bb-regression sub-network.
+        """
+        super(RPN_BBRegressor, self).__init__()
+        self.dim = conv.dim
+        n_input_channels = cf.end_filts
+        n_features = cf.n_rpn_features
+        n_output_channels = cf.n_anchors_per_pos * self.dim * 2
+        anchor_stride = cf.rpn_anchor_stride
+
+        self.conv_1 = conv(n_input_channels, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_2 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
+        self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride,
+                               pad=1, relu=None)
+
+    def forward(self, x):
+        """
+        :param x: input feature map (b, in_c, y, x, (z))
+        :return: bb_logits (b, n_anchors, dim * 2)
+        """
+        x = self.conv_1(x)
+        x = self.conv_2(x)
+        x = self.conv_3(x)
+        x = self.conv_4(x)
+        bb_logits = self.conv_final(x)
+
+        axes = (0, 2, 3, 1) if self.dim == 2 else (0, 2, 3, 4, 1)
+        bb_logits = bb_logits.permute(*axes)
+        bb_logits = bb_logits.contiguous()
+        bb_logits = bb_logits.view(x.size()[0], -1, self.dim * 2)
+
+        return [bb_logits]
+    
+    
 class RPN(nn.Module):
     """
     Region Proposal Network.
@@ -46,11 +153,12 @@ class RPN(nn.Module):
 
         super(RPN, self).__init__()
         self.dim = conv.dim
-
-        self.conv_shared = conv(cf.end_filts, cf.n_rpn_features, ks=3, stride=cf.rpn_anchor_stride, pad=1, relu=cf.relu)
+        n_output_channels = cf.n_anchors_per_pos * cf.head_classes
+        n_features = cf.n_rpn_features
+        anchor_stride = cf.rpn_anchor_stride
+        self.conv_shared = conv(cf.end_filts, cf.n_rpn_features, ks=3, stride=cf.rpn_anchor_stride, pad=1, relu=cf.relu)      
         self.conv_class = conv(cf.n_rpn_features, 2 * len(cf.rpn_anchor_ratios), ks=1, stride=1, relu=None)
         self.conv_bbox = conv(cf.n_rpn_features, 2 * self.dim * len(cf.rpn_anchor_ratios), ks=1, stride=1, relu=None)
-
 
     def forward(self, x):
         """
@@ -62,7 +170,7 @@ class RPN(nn.Module):
 
         # Shared convolutional base of the RPN.
         x = self.conv_shared(x)
-
+        
         # Anchor Score. (batch, anchors per location * 2, y, x, (z)).
         rpn_class_logits = self.conv_class(x)
         # Reshape to (batch, 2, anchors)
@@ -845,7 +953,12 @@ class net(nn.Module):
         self.np_anchors = mutils.generate_pyramid_anchors(self.logger, self.cf)
         self.anchors = torch.from_numpy(self.np_anchors).float().cuda()
         self.Fpn = backbone.FPN(self.cf, conv)
-        self.Rpn = RPN(self.cf, conv)
+#         self.Rpn = RPN(self.cf, conv)
+        
+        self.Rpn_Classifier = RPN_Classifier(self.cf, conv)
+#         self.Rpn_SharedConv = RPN_SharedConv(self.cf, conv)
+        self.Rpn_BBRegressor = RPN_BBRegressor(self.cf, conv)
+        
         self.Classifier = Classifier(self.cf, conv)
         self.Mask = Mask(self.cf, conv)
 
@@ -878,7 +991,8 @@ class net(nn.Module):
         #forward passes. 
         #1. general forward pass, where no activations are saved in second stage (for performance monitoring and loss sampling). 
         #2. second stage forward pass of sampled rois with stored activations for backprop.
-        rpn_class_logits, rpn_pred_deltas, proposal_boxes, detections, detection_masks = self.forward(img)
+        with torch.no_grad():
+            rpn_class_logits, rpn_pred_deltas, proposal_boxes, detections, detection_masks = self.forward(img)
         mrcnn_class_logits, mrcnn_pred_deltas, mrcnn_pred_mask, target_class_ids, mrcnn_target_deltas, target_mask,  \
         sample_proposals = self.loss_samples_forward(gt_class_ids, gt_boxes, gt_masks)
 
@@ -931,7 +1045,8 @@ class net(nn.Module):
 
         batch_rpn_class_loss = batch_rpn_class_loss
         batch_rpn_bbox_loss = batch_rpn_bbox_loss
-
+        batch_rpn_class_loss = torch.FloatTensor([0]).cuda()
+        batch_rpn_bbox_loss = torch.FloatTensor([0]).cuda()
         # compute mrcnn losses.
         mrcnn_class_loss = compute_mrcnn_class_loss(target_class_ids, mrcnn_class_logits)
         mrcnn_bbox_loss = compute_mrcnn_bbox_loss(mrcnn_target_deltas, mrcnn_pred_deltas, target_class_ids)
@@ -993,16 +1108,24 @@ class net(nn.Module):
         :return: detection_masks: (n_final_detections, n_classes, y, x, (z)) raw molded masks as returned by mask-head.
         """
         # extract features.
-        with torch.no_grad():
-            fpn_outs = self.Fpn(img)
+        fpn_outs = self.Fpn(img)
         rpn_feature_maps = [fpn_outs[i] for i in self.cf.pyramid_levels]
         self.mrcnn_feature_maps = rpn_feature_maps
 
-        # loop through pyramid layers and apply RPN.
+#         # loop through pyramid layers and apply RPN.
+#         layer_outputs = []  # list of lists
+#         for p in rpn_feature_maps:
+#             layer_outputs.append(self.Rpn(p))
+
+        # loop through pyramid layers and apply RPN. @rtgunti Add Classifier and BBRegressor heads just as in Retina-Net
         layer_outputs = []  # list of lists
         for p in rpn_feature_maps:
-            layer_outputs.append(self.Rpn(p))
-
+            cl_outs = self.Rpn_Classifier(p)
+            bb_outs = self.Rpn_BBRegressor(p)  
+            cl_outs.extend(bb_outs)
+            layer_outputs.append(cl_outs)            
+            
+            
         # concatenate layer outputs.
         # convert from list of lists of level outputs to list of lists of outputs across levels.
         # e.g. [[a1, b1, c1], [a2, b2, c2]] => [[a1, a2], [b1, b2], [c1, c2]]
