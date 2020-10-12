@@ -11,3 +11,4 @@ __pycache__/*
 .idea/*
 
 !/assets/*
+batchviewer/d010_pre0_dat.nii.gz
