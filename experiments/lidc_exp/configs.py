@@ -53,7 +53,7 @@ class configs(DefaultConfigs):
         self.dim = 3
 
         # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
-        self.model = 'mrcnn'
+        self.model = 'retina_net'
         
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
@@ -65,9 +65,9 @@ class configs(DefaultConfigs):
         self.data_dest = ''
 
         # path to preprocessed data.
-#         self.pp_name = 'data_pp'
+        self.pp_name = 'data_pp'
 #         self.pp_name = 'data_pp_int'
-        self.pp_name = 'data_pp_wocrop'
+#         self.pp_name = 'data_pp_wocrop'
         
         self.input_df_name = 'info_df.pickle'
         self.pp_data_path = '{}/{}/'.format(self.root_dir, self.pp_name)
@@ -156,7 +156,7 @@ class configs(DefaultConfigs):
         self.test_n_epochs = 2
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
-        self.test_aug = False 
+        self.test_aug = True
         self.report_score_level = ['rois'] # choose list from 'patient', 'rois'
 #         self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
         self.class_dict = {1: 'lesion'}  # 0 is background.
@@ -267,7 +267,7 @@ class configs(DefaultConfigs):
 
         # anchor scales are chosen according to expected object sizes in data set. Default uses only one anchor scale
         # per pyramid level. (outer list are pyramid levels (corresponding to BACKBONE_STRIDES), inner list are scales per level.)
-        self.rpn_anchor_scales = {'xy': [[4], [16], [32], [64]], 'z': [[2], [4], [8], [16]]}
+        self.rpn_anchor_scales = {'xy': [[8], [16], [32], [64]], 'z': [[2], [4], [8], [16]]}
 
         # choose which pyramid levels to extract features from: P2: 0, P3: 1, P4: 2, P5: 3.
         self.pyramid_levels = [0, 1, 2, 3]
@@ -288,7 +288,7 @@ class configs(DefaultConfigs):
         self.roi_positive_ratio = 0.5
         self.anchor_matching_iou = 0.7
 
-        # factor of top-k candidates to draw from  per negative sample (stochastic-hard-example-mining).
+        # factor of top-k candidates to draw from per negative sample (stochastic-hard-example-mining).
         # poolsize to draw top-k candidates from will be shem_poolsize * n_negative_samples.
         self.shem_poolsize = 10
 

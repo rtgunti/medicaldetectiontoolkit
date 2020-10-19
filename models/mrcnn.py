@@ -153,9 +153,6 @@ class RPN(nn.Module):
 
         super(RPN, self).__init__()
         self.dim = conv.dim
-        n_output_channels = cf.n_anchors_per_pos * cf.head_classes
-        n_features = cf.n_rpn_features
-        anchor_stride = cf.rpn_anchor_stride
         self.conv_shared = conv(cf.end_filts, cf.n_rpn_features, ks=3, stride=cf.rpn_anchor_stride, pad=1, relu=cf.relu)      
         self.conv_class = conv(cf.n_rpn_features, 2 * len(cf.rpn_anchor_ratios), ks=1, stride=1, relu=None)
         self.conv_bbox = conv(cf.n_rpn_features, 2 * self.dim * len(cf.rpn_anchor_ratios), ks=1, stride=1, relu=None)
@@ -943,8 +940,6 @@ class net(nn.Module):
                 raise Exception("Image z dimension must be dividable by 2 at least 3 times "
                                 "to avoid fractions when downscaling and upscaling.")
 
-
-
         # instanciate abstract multi dimensional conv class and backbone class.
         conv = mutils.NDConvGenerator(self.cf.dim)
         backbone = utils.import_module('bbone', self.cf.backbone_path)
@@ -991,8 +986,8 @@ class net(nn.Module):
         #forward passes. 
         #1. general forward pass, where no activations are saved in second stage (for performance monitoring and loss sampling). 
         #2. second stage forward pass of sampled rois with stored activations for backprop.
-        with torch.no_grad():
-            rpn_class_logits, rpn_pred_deltas, proposal_boxes, detections, detection_masks = self.forward(img)
+#         with torch.no_grad():
+        rpn_class_logits, rpn_pred_deltas, proposal_boxes, detections, detection_masks = self.forward(img)
         mrcnn_class_logits, mrcnn_pred_deltas, mrcnn_pred_mask, target_class_ids, mrcnn_target_deltas, target_mask,  \
         sample_proposals = self.loss_samples_forward(gt_class_ids, gt_boxes, gt_masks)
 
@@ -1045,8 +1040,8 @@ class net(nn.Module):
 
         batch_rpn_class_loss = batch_rpn_class_loss
         batch_rpn_bbox_loss = batch_rpn_bbox_loss
-        batch_rpn_class_loss = torch.FloatTensor([0]).cuda()
-        batch_rpn_bbox_loss = torch.FloatTensor([0]).cuda()
+#         batch_rpn_class_loss = torch.FloatTensor([0]).cuda() @rtgunti : to inhibit RPN loss when finetuning 2nd stage
+#         batch_rpn_bbox_loss = torch.FloatTensor([0]).cuda()
         # compute mrcnn losses.
         mrcnn_class_loss = compute_mrcnn_class_loss(target_class_ids, mrcnn_class_logits)
         mrcnn_bbox_loss = compute_mrcnn_bbox_loss(mrcnn_target_deltas, mrcnn_pred_deltas, target_class_ids)

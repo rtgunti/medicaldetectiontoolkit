@@ -201,7 +201,7 @@ def load_pre_trained_weights(checkpoint_path, net, optimizer, cf):
     curr_opt_dict = optimizer.state_dict()
     curr_keys = set(net.state_dict().keys())
     pre_keys = set(checkpoint_params['state_dict'].keys())
-    if 0:
+    if 1:
         print("Curr_keys : {} pre_keys : {} ".format(len(curr_keys), len(pre_keys)))
         print("== Intersection ==")
         [print(k) for k in curr_keys.intersection(pre_keys)]
@@ -213,9 +213,11 @@ def load_pre_trained_weights(checkpoint_path, net, optimizer, cf):
     for name, param in checkpoint_params['state_dict'].items():
         if 'Rpn_' + name in curr_net_dict:
             curr_net_dict['Rpn_' + name].copy_(param.data)
+            print('Loaded Rpn_' + name)
             continue
         if name not in curr_net_dict :
             continue
+        print('Loaded ' + name)
         curr_net_dict[name].copy_(param.data)
     net.load_state_dict(curr_net_dict)
     optimizer = torch.optim.Adam(net.parameters(), lr=cf.learning_rate[0], weight_decay=cf.weight_decay)    
