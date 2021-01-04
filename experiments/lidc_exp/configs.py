@@ -65,9 +65,9 @@ class configs(DefaultConfigs):
         self.data_dest = ''
 
         # path to preprocessed data.
-        self.pp_name = 'data_pp'
+#         self.pp_name = 'data_pp'
 #         self.pp_name = 'data_pp_int'
-#         self.pp_name = 'data_pp_wocrop'
+        self.pp_name = 'data_pp_wocrop'
         
         self.input_df_name = 'info_df.pickle'
         self.pp_data_path = '{}/{}/'.format(self.root_dir, self.pp_name)
@@ -104,8 +104,8 @@ class configs(DefaultConfigs):
         
         # ratio of free sampled batch elements before class balancing is triggered
         # (>0 to include "empty"/background patches.)
-#         self.batch_sample_slack = 0.2
-        self.batch_sample_slack = 0.5 if self.dim == 2 else 1.0
+        self.batch_sample_slack = 0.2
+#         self.batch_sample_slack = 0.5 if self.dim == 2 else 1.0
 
         # set 2D network to operate in 3D images.
         self.merge_2D_to_3D_preds = False
@@ -153,10 +153,10 @@ class configs(DefaultConfigs):
 
         # set the top-n-epochs to be saved for temporal averaging in testing.
         self.save_n_models = 5
-        self.test_n_epochs = 2
+        self.test_n_epochs = 1
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
-        self.test_aug = True
+        self.test_aug = False
         self.report_score_level = ['rois'] # choose list from 'patient', 'rois'
 #         self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
         self.class_dict = {1: 'lesion'}  # 0 is background.
@@ -273,7 +273,7 @@ class configs(DefaultConfigs):
         self.pyramid_levels = [0, 1, 2, 3]
 
         # number of feature maps in rpn. typically lowered in 3D to save gpu-memory.
-        self.n_rpn_features = 512 if self.dim == 2 else 64
+        self.n_rpn_features = 512 if self.dim == 2 else 128
 
         # anchor ratios and strides per position in feature maps.
         self.rpn_anchor_ratios = [0.5, 1, 2]
@@ -309,6 +309,7 @@ class configs(DefaultConfigs):
 
         # pre-selection in proposal-layer (stage 1) for NMS-speedup. applied per batch element.
         self.pre_nms_limit = 3000 if self.dim == 2 else 6000
+#         self.pre_nms_limit = 10000 if self.dim == 2 else 50000 #@rtgunti : Using same limit to compare with RetinaNet
 
         # n_proposals to be selected after NMS per batch element. too high numbers blow up memory if "detect_while_training" is True,
         # since proposals of the entire batch are forwarded through second stage in as one "batch".
@@ -346,7 +347,7 @@ class configs(DefaultConfigs):
                                            self.rpn_anchor_scales['z']]
             self.n_anchors_per_pos = len(self.rpn_anchor_ratios) * 3
 
-            self.n_rpn_features = 256 if self.dim == 2 else 64
+            self.n_rpn_features = 256 if self.dim == 2 else 128
 
             # pre-selection of detections for NMS-speedup. per entire batch.
             self.pre_nms_limit = 10000 if self.dim == 2 else 50000

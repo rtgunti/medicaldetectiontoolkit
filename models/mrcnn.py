@@ -221,6 +221,7 @@ class Classifier(nn.Module):
         :return: mrcnn_bbox (n_proposals, n_head_classes, 2 * dim) predicted corrections to be applied to proposals for refinement.
         """
         x = pyramid_roi_align(x, rois, self.pool_size, self.pyramid_levels, self.dim)
+        print(x.shape)
         x = self.conv1(x)
         x = self.conv2(x)
         x = x.view(-1, self.in_channels * 4)
@@ -449,8 +450,9 @@ def proposal_layer(rpn_pred_probs, rpn_pred_deltas, proposal_count, anchors, cf)
             boxes = mutils.clip_boxes_3D(boxes, cf.window)
             keep = nms_3D(torch.cat((boxes, scores.unsqueeze(1)), 1), cf.rpn_nms_threshold)
             norm = torch.from_numpy(cf.scale).float().cuda()
-
+        print('total proposals : ',ix, len(keep))
         keep = keep[:proposal_count]
+        print('keeping proposals : ',ix, len(keep))
         boxes = boxes[keep, :]
         rpn_scores = scores[keep][:, None]
 
@@ -986,8 +988,8 @@ class net(nn.Module):
         #forward passes. 
         #1. general forward pass, where no activations are saved in second stage (for performance monitoring and loss sampling). 
         #2. second stage forward pass of sampled rois with stored activations for backprop.
-#         with torch.no_grad():
-        rpn_class_logits, rpn_pred_deltas, proposal_boxes, detections, detection_masks = self.forward(img)
+        with torch.no_grad():
+            rpn_class_logits, rpn_pred_deltas, proposal_boxes, detections, detection_masks = self.forward(img)
         mrcnn_class_logits, mrcnn_pred_deltas, mrcnn_pred_mask, target_class_ids, mrcnn_target_deltas, target_mask,  \
         sample_proposals = self.loss_samples_forward(gt_class_ids, gt_boxes, gt_masks)
 
@@ -1040,8 +1042,8 @@ class net(nn.Module):
 
         batch_rpn_class_loss = batch_rpn_class_loss
         batch_rpn_bbox_loss = batch_rpn_bbox_loss
-#         batch_rpn_class_loss = torch.FloatTensor([0]).cuda() @rtgunti : to inhibit RPN loss when finetuning 2nd stage
-#         batch_rpn_bbox_loss = torch.FloatTensor([0]).cuda()
+        batch_rpn_class_loss = torch.FloatTensor([0]).cuda() #@rtgunti : to inhibit RPN loss when finetuning 2nd stage
+        batch_rpn_bbox_loss = torch.FloatTensor([0]).cuda()
         # compute mrcnn losses.
         mrcnn_class_loss = compute_mrcnn_class_loss(target_class_ids, mrcnn_class_logits)
         mrcnn_bbox_loss = compute_mrcnn_bbox_loss(mrcnn_target_deltas, mrcnn_pred_deltas, target_class_ids)
@@ -1086,9 +1088,10 @@ class net(nn.Module):
                        [[{box_0}, ... {box_n}], [{box_0}, ... {box_n}], ...]
                'seg_preds': pixel-wise class predictions (b, 1, y, x, (z)) with values [0, n_classes]
         """
+        print('in test_forward')
         img = batch['data']
         img = torch.from_numpy(img).float().cuda()
-        _, _, _, detections, detection_masks = self.forward(img)
+        _, _, _, detections, detection_masks = self.forward(img, is_training=False)
         results_dict = get_results(self.cf, img.shape, detections, detection_masks, return_masks=return_masks)
         return results_dict
 
@@ -1129,8 +1132,11 @@ class net(nn.Module):
         rpn_pred_logits, rpn_pred_probs, rpn_pred_deltas = outputs
 
         # generate proposals: apply predicted deltas to anchors and filter by foreground scores from RPN classifier.
+        print('is_training', is_training)
         proposal_count = self.cf.post_nms_rois_training if is_training else self.cf.post_nms_rois_inference
+        print('proposal_count', proposal_count)
         batch_rpn_rois, batch_proposal_boxes = proposal_layer(rpn_pred_probs, rpn_pred_deltas, proposal_count, self.anchors, self.cf)
+        print('batch_rpn_rois ', len(batch_rpn_rois))
 
         # merge batch dimension of proposals while storing allocation info in coordinate dimension.
         batch_ixs = torch.from_numpy(np.repeat(np.arange(batch_rpn_rois.shape[0]), batch_rpn_rois.shape[1])).float().cuda()

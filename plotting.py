@@ -123,6 +123,7 @@ def plot_test_prediction(results_list, cf, outfile=None):
                             if box['box_type'] == 'det':
                                 # dont plot background preds or low confidence boxes.
                                 if box['box_pred_class_id'] > 0 and box['box_score'] > cf.min_det_thresh:
+#                                 if box['box_pred_class_id'] > 0:
                                     plot_text = True
                                     score = np.max(box['box_score'])
                                     score_text = '{}|{:.0f}'.format(box['box_pred_class_id'], score*100)
@@ -390,7 +391,7 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
     title = outfile.split('/')[-1] + ' count:{}'.format(len(label_list))
     fig = plt.figure()
 #     ax = fig.add_axes([0,0,1,1])
-#     plt.yscale('log')
+    plt.yscale('log')
     if 0 in labels:
         plt.hist(preds[labels == 0], alpha=0.3, color='g', range=(0, 1), bins=50, label='false pos.')
     if 1 in labels:
@@ -409,8 +410,8 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
     plt.legend()
     plt.title(title)
     plt.xlabel('confidence score')
-#     plt.ylabel('log n')
-    plt.ylabel('count')
+    plt.ylabel('log n')
+#     plt.ylabel('count')
     plt.savefig(outfile + ".png")
     plt.close()
 

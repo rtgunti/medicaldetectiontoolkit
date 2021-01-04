@@ -223,15 +223,16 @@ def refine_detections(anchors, probs, deltas, batch_ixs, cf):
     :return: result: (n_final_detections, (y1, x1, y2, x2, (z1), (z2), batch_ix, pred_class_id, pred_score))
     """
     anchors = anchors.repeat(len(np.unique(batch_ixs)), 1)
-
     # flatten foreground probabilities, sort and trim down to highest confidences by pre_nms limit.
-#     print("probs.shape : ", probs.shape)
     fg_probs = probs[:, 1:].contiguous()
-#     print("fg_probs : ", fg_probs.shape)
+#     print("fg_probs", fg_probs.shape)
     flat_probs, flat_probs_order = fg_probs.view(-1).sort(descending=True)
     keep_ix = flat_probs_order[:cf.pre_nms_limit]
+#     print("keep_ix", keep_ix[:10])
     # reshape indices to 2D index array with shape like fg_probs.
     keep_arr = torch.cat(((keep_ix / fg_probs.shape[1]).unsqueeze(1), (keep_ix % fg_probs.shape[1]).unsqueeze(1)), 1)
+#     print("keep_arr.shape", keep_arr.shape)
+#     print(keep_arr[:10,1])
 
     pre_nms_scores = flat_probs[:cf.pre_nms_limit]
     pre_nms_class_ids = keep_arr[:, 1] + 1  # add background again.
@@ -459,6 +460,7 @@ class net(nn.Module):
                     self.np_anchors[np.argwhere(anchor_class_match > 0)][:, 0], img.shape[2:])
                 for p in pos_anchors:
                     box_results_list[b].append({'box_coords': p, 'box_type': 'pos_anchor'})
+#                 print('pos_anchors', len(pos_anchors))
 
             else:
                 anchor_class_match = np.array([-1]*self.np_anchors.shape[0])

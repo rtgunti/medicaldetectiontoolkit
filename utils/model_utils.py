@@ -241,11 +241,21 @@ def generate_anchors_3D(scales_xy, scales_z, ratios, shape, feature_stride_xy, f
     scales_xy, ratios_meshed = np.meshgrid(np.array(scales_xy), np.array(ratios))
     scales_xy = scales_xy.flatten()
     ratios_meshed = ratios_meshed.flatten()
+    
+#     print("+"*10)
+#     print("scales_xy", scales_xy)
+#     print("ratios_meshed", ratios_meshed)
+#     print("+"*10)
 
     # Enumerate heights and widths from scales and ratios
     heights = scales_xy / np.sqrt(ratios_meshed)
     widths = scales_xy * np.sqrt(ratios_meshed)
     depths = np.tile(np.array(scales_z), len(ratios_meshed)//np.array(scales_z)[..., None].shape[0])
+    
+#     print("="*10)
+#     for ind, (h, w, d) in enumerate(zip(heights, widths, depths)):
+#         print(ind, h, w, d)
+#     print("="*10)
 
     # Enumerate shifts in feature space
     shifts_y = np.arange(0, shape[0], anchor_stride) * feature_stride_xy #translate from fm positions to input coords.

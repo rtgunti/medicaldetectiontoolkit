@@ -471,7 +471,6 @@ class Predictor:
         img = batch['data']
 
         if img.shape[0] <= self.cf.batch_size:
-
             if self.mode == 'val':
                 # call training method to monitor losses
                 results_dict = self.net.train_forward(batch, is_validation=True)
@@ -489,6 +488,7 @@ class Predictor:
                 if self.mode == 'val':
                     chunk_dicts += [self.net.train_forward(b, is_validation=True)]
                 else:
+                    print('check net.test_forward')
                     chunk_dicts += [self.net.test_forward(b, return_masks=self.cf.return_masks_in_test)]
 
 
