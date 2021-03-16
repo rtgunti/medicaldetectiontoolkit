@@ -195,6 +195,7 @@ class Predictor:
             self.logger.info('applying wcs to test set predictions with iou = {} and n_ens = {}.'.format(
                 self.cf.wcs_iou, self.n_ens))
             pool = Pool(processes=6)
+#             print("applying wcs")
             mp_inputs = [[ii[0], ii[1], self.cf.class_dict, self.cf.wcs_iou, self.n_ens] for ii in list_of_results_per_patient]
             list_of_results_per_patient = pool.map(apply_wbc_to_patient, mp_inputs, chunksize=1)
             pool.close()
@@ -488,7 +489,7 @@ class Predictor:
                 if self.mode == 'val':
                     chunk_dicts += [self.net.train_forward(b, is_validation=True)]
                 else:
-                    print('check net.test_forward')
+#                     print('check net.test_forward')
                     chunk_dicts += [self.net.test_forward(b, return_masks=self.cf.return_masks_in_test)]
 
 

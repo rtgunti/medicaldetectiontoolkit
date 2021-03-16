@@ -221,7 +221,6 @@ class Classifier(nn.Module):
         :return: mrcnn_bbox (n_proposals, n_head_classes, 2 * dim) predicted corrections to be applied to proposals for refinement.
         """
         x = pyramid_roi_align(x, rois, self.pool_size, self.pyramid_levels, self.dim)
-        print(x.shape)
         x = self.conv1(x)
         x = self.conv2(x)
         x = x.view(-1, self.in_channels * 4)
@@ -450,9 +449,9 @@ def proposal_layer(rpn_pred_probs, rpn_pred_deltas, proposal_count, anchors, cf)
             boxes = mutils.clip_boxes_3D(boxes, cf.window)
             keep = nms_3D(torch.cat((boxes, scores.unsqueeze(1)), 1), cf.rpn_nms_threshold)
             norm = torch.from_numpy(cf.scale).float().cuda()
-        print('batch_ix {} total proposals {}'.format(ix, len(keep)))
+#         print('batch_ix {} total proposals {}'.format(ix, len(keep)))
         keep = keep[:proposal_count]
-        print('batch_ix {} keeping proposals {}'.format(ix, len(keep)))
+#         print('batch_ix {} keeping proposals {}'.format(ix, len(keep)))
         boxes = boxes[keep, :]
         rpn_scores = scores[keep][:, None]
 
@@ -1055,7 +1054,8 @@ class net(nn.Module):
         else:
             mrcnn_mask_loss = torch.FloatTensor([0]).cuda()
 
-        loss = batch_rpn_class_loss + batch_rpn_bbox_loss + mrcnn_class_loss + mrcnn_bbox_loss + mrcnn_mask_loss
+#         loss = batch_rpn_class_loss + batch_rpn_bbox_loss + mrcnn_class_loss + mrcnn_bbox_loss + mrcnn_mask_loss
+        loss = mrcnn_class_loss + mrcnn_bbox_loss
 
         # monitor RPN performance: detection count = the number of correctly matched proposals per fg-class.
         dcount = [list(target_class_ids.cpu().data.numpy()).count(c) for c in np.arange(self.cf.head_classes)[1:]]
@@ -1088,7 +1088,6 @@ class net(nn.Module):
                        [[{box_0}, ... {box_n}], [{box_0}, ... {box_n}], ...]
                'seg_preds': pixel-wise class predictions (b, 1, y, x, (z)) with values [0, n_classes]
         """
-        print('in test_forward')
         img = batch['data']
         img = torch.from_numpy(img).float().cuda()
         _, _, _, detections, detection_masks = self.forward(img, is_training=False)
@@ -1132,11 +1131,12 @@ class net(nn.Module):
         rpn_pred_logits, rpn_pred_probs, rpn_pred_deltas = outputs
         
         # generate proposals: apply predicted deltas to anchors and filter by foreground scores from RPN classifier.
-        print('is_training', is_training)
+#         print('is_training', is_training)
+        print("rpn_pred_logits ", len(rpn_pred_logits[0]))
         proposal_count = self.cf.post_nms_rois_training if is_training else self.cf.post_nms_rois_inference
         print('proposal_count', proposal_count)
         batch_rpn_rois, batch_proposal_boxes = proposal_layer(rpn_pred_probs, rpn_pred_deltas, proposal_count, self.anchors, self.cf)
-        print('batch_rpn_rois ', len(batch_rpn_rois))
+#         print('batch_rpn_rois ', len(batch_rpn_rois))
 
         # merge batch dimension of proposals while storing allocation info in coordinate dimension.
         batch_ixs = torch.from_numpy(np.repeat(np.arange(batch_rpn_rois.shape[0]), batch_rpn_rois.shape[1])).float().cuda()

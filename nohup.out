@@ -1,0 +1,453 @@
+GeForce GTX 1080 Ti
+Logging to /home/jupyter-rgunti/data/Thesis/experiments/thesis_retina/fold_0/exec.log
+[39mperforming training in 3D over fold 0 on experiment /home/jupyter-rgunti/data/Thesis/experiments/thesis_retina with model retina_net
+[0m[39mfeature map shapes: 
+[[32 32 64]
+ [16 16 32]
+ [ 8  8 16]
+ [ 4  4  8]]
+[0m[39manchor scales: 
+{'xy': [[8, 10.079368399158986, 12.699208415745595], [16, 20.15873679831797, 25.39841683149119], [32, 40.31747359663594, 50.79683366298238], [64, 80.63494719327188, 101.59366732596476]], 'z': [[2, 2.5198420997897464, 3.1748021039363987], [4, 5.039684199579493, 6.3496042078727974], [8, 10.079368399158986, 12.699208415745595], [16, 20.15873679831797, 25.39841683149119]]}
+[0m[39mlevel 0: P2 : Built anchors (589824, 6) / expected anchors 589824 ||| total build (589824, 6) / total expected 673920
+[0m[39mlevel 1: P3 : Built anchors (73728, 6) / expected anchors 73728 ||| total build (663552, 6) / total expected 673920
+[0m[39mlevel 2: P4 : Built anchors (9216, 6) / expected anchors 9216 ||| total build (672768, 6) / total expected 673920
+[0m[39mlevel 3: P5 : Built anchors (1152, 6) / expected anchors 1152 ||| total build (673920, 6) / total expected 673920
+[0mRetina Net Out channels : 18
+[39musing default pytorch weight init
+[0mlength of monitor_metrics is  1201
+[39mloading dataset and initializing batch generators...
+[0m[39mSplit : Train [43], Val [11], Test [0]
+[0m[39mTrain pids : ['d034_pre0', 'd080_pre0', 'd059_pre0', 'd030_pre0', 'd006_pre0', 'd053_pre0', 'd031_pre0', 'd072_pre0', 'd036_pre0', 'd081_pre0', 'd014_pre0', 'd021_pre0', 'd045_pre0', 'd032_pre0', 'd065_pre0', 'd068_pre0', 'd002_pre0', 'd020_pre0', 'd066_pre0', 'd043_pre0', 'd010_pre0', 'd042_pre0', 'd061_pre0', 'd037_pre0', 'd035_pre0', 'd017_pre0', 'd064_pre0', 'd079_pre0', 'd004_pre0', 'd001_pre0', 'd073_pre0', 'd070_pre0', 'd082_pre0', 'd058_pre0', 'd075_pre0', 'd047_pre0', 'd019_pre0', 'd003_pre0', 'd057_pre0', 'd067_pre0', 'd071_pre0', 'd054_pre0', 'd005_pre0']
+[0m[39mVal pids : ['d018_pre0', 'd050_pre0', 'd040_pre0', 'd056_pre0', 'd063_pre0', 'd062_pre0', 'd012_pre0', 'd022_pre0', 'd048_pre0', 'd060_pre0', 'd078_pre0']
+[0m[39mstarting training epoch 1
+[0m[39mtr. (ep. 1) batch  1/50 || loss: 1.00, class: 0.54, bbox: 0.46
+[0m[39mtr. (ep. 1) batch  2/50 || loss: 1.46, class: 0.63, bbox: 0.83
+[0m[39mtr. (ep. 1) batch  3/50 || loss: 1.28, class: 0.62, bbox: 0.65
+[0m[39mtr. (ep. 1) batch  4/50 || loss: 1.35, class: 0.62, bbox: 0.73
+[0m[39mtr. (ep. 1) batch  5/50 || loss: 1.94, class: 0.70, bbox: 1.23
+[0m[39mtr. (ep. 1) batch  6/50 || loss: 0.83, class: 0.53, bbox: 0.30
+[0m[39mtr. (ep. 1) batch  7/50 || loss: 1.15, class: 0.61, bbox: 0.54
+[0m[39mtr. (ep. 1) batch  8/50 || loss: 0.75, class: 0.52, bbox: 0.22
+[0m[39mtr. (ep. 1) batch  9/50 || loss: 2.50, class: 0.70, bbox: 1.80
+[0m[39mtr. (ep. 1) batch 10/50 || loss: 1.50, class: 0.70, bbox: 0.79
+[0m[39mtr. (ep. 1) batch 11/50 || loss: 1.51, class: 0.61, bbox: 0.90
+[0m[39mtr. (ep. 1) batch 12/50 || loss: 1.04, class: 0.52, bbox: 0.52
+[0m[39mtr. (ep. 1) batch 13/50 || loss: 2.23, class: 0.70, bbox: 1.53
+[0m[39mtr. (ep. 1) batch 14/50 || loss: 0.91, class: 0.52, bbox: 0.39
+[0m[39mtr. (ep. 1) batch 15/50 || loss: 0.35, class: 0.35, bbox: 0.00
+[0m[39mtr. (ep. 1) batch 16/50 || loss: 1.63, class: 0.70, bbox: 0.93
+[0m[39mtr. (ep. 1) batch 17/50 || loss: 1.68, class: 0.70, bbox: 0.98
+[0m[39mtr. (ep. 1) batch 18/50 || loss: 1.05, class: 0.61, bbox: 0.44
+[0m[39mtr. (ep. 1) batch 19/50 || loss: 1.15, class: 0.61, bbox: 0.54
+[0m[39mtr. (ep. 1) batch 20/50 || loss: 1.25, class: 0.61, bbox: 0.64
+[0m[39mtr. (ep. 1) batch 21/50 || loss: 1.14, class: 0.52, bbox: 0.62
+[0m[39mtr. (ep. 1) batch 22/50 || loss: 1.18, class: 0.70, bbox: 0.48
+[0m[39mtr. (ep. 1) batch 23/50 || loss: 1.45, class: 0.61, bbox: 0.85
+[0m[39mtr. (ep. 1) batch 24/50 || loss: 1.32, class: 0.61, bbox: 0.71
+[0m[39mtr. (ep. 1) batch 25/50 || loss: 0.50, class: 0.43, bbox: 0.06
+[0m[39mtr. (ep. 1) batch 26/50 || loss: 2.40, class: 0.70, bbox: 1.71
+[0m[39mtr. (ep. 1) batch 27/50 || loss: 1.12, class: 0.61, bbox: 0.51
+[0m[39mtr. (ep. 1) batch 28/50 || loss: 1.73, class: 0.70, bbox: 1.04
+[0m[39mtr. (ep. 1) batch 29/50 || loss: 1.61, class: 0.70, bbox: 0.91
+[0m[39mtr. (ep. 1) batch 30/50 || loss: 0.95, class: 0.61, bbox: 0.34
+[0m[39mtr. (ep. 1) batch 31/50 || loss: 0.91, class: 0.61, bbox: 0.30
+[0m[39mtr. (ep. 1) batch 32/50 || loss: 1.73, class: 0.61, bbox: 1.12
+[0m[39mtr. (ep. 1) batch 33/50 || loss: 1.35, class: 0.69, bbox: 0.66
+[0m[39mtr. (ep. 1) batch 34/50 || loss: 0.78, class: 0.52, bbox: 0.26
+[0m[39mtr. (ep. 1) batch 35/50 || loss: 1.19, class: 0.61, bbox: 0.58
+[0m[39mtr. (ep. 1) batch 36/50 || loss: 0.79, class: 0.52, bbox: 0.27
+[0m[39mtr. (ep. 1) batch 37/50 || loss: 1.23, class: 0.61, bbox: 0.62
+[0m[39mtr. (ep. 1) batch 38/50 || loss: 1.29, class: 0.61, bbox: 0.68
+[0m[39mtr. (ep. 1) batch 39/50 || loss: 1.17, class: 0.70, bbox: 0.48
+[0m[39mtr. (ep. 1) batch 40/50 || loss: 1.00, class: 0.61, bbox: 0.39
+[0m[39mtr. (ep. 1) batch 41/50 || loss: 1.40, class: 0.61, bbox: 0.79
+[0m[39mtr. (ep. 1) batch 42/50 || loss: 1.81, class: 0.70, bbox: 1.12
+[0m[39mtr. (ep. 1) batch 43/50 || loss: 1.65, class: 0.70, bbox: 0.95
+[0m[39mtr. (ep. 1) batch 44/50 || loss: 0.86, class: 0.52, bbox: 0.34
+[0m[39mtr. (ep. 1) batch 45/50 || loss: 1.64, class: 0.61, bbox: 1.04
+[0m[39mtr. (ep. 1) batch 46/50 || loss: 2.12, class: 0.69, bbox: 1.43
+[0m[39mtr. (ep. 1) batch 47/50 || loss: 0.98, class: 0.52, bbox: 0.46
+[0m[39mtr. (ep. 1) batch 48/50 || loss: 1.22, class: 0.61, bbox: 0.61
+[0m[39mtr. (ep. 1) batch 49/50 || loss: 1.49, class: 0.70, bbox: 0.79
+[0m[39mtr. (ep. 1) batch 50/50 || loss: 0.35, class: 0.35, bbox: 0.00
+[0m[39mevaluating in mode train
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39mstarting validation in mode val_sampling.
+[0m[39mval. (ep. 1) batch 1/10 || loss: 1.37, class: 0.61, bbox: 0.76
+[0m[39mval. (ep. 1) batch 2/10 || loss: 1.15, class: 0.52, bbox: 0.63
+[0m[39mval. (ep. 1) batch 3/10 || loss: 1.17, class: 0.69, bbox: 0.47
+[0m[39mval. (ep. 1) batch 4/10 || loss: 1.07, class: 0.61, bbox: 0.46
+[0m[39mval. (ep. 1) batch 5/10 || loss: 1.44, class: 0.52, bbox: 0.92
+[0m[39mval. (ep. 1) batch 6/10 || loss: 0.69, class: 0.52, bbox: 0.16
+[0m[39mval. (ep. 1) batch 7/10 || loss: 0.58, class: 0.43, bbox: 0.15
+[0m[39mval. (ep. 1) batch 8/10 || loss: 0.83, class: 0.52, bbox: 0.31
+[0m[39mval. (ep. 1) batch 9/10 || loss: 0.72, class: 0.52, bbox: 0.20
+[0m[39mval. (ep. 1) batch 10/10 || loss: 0.73, class: 0.52, bbox: 0.21
+[0m[39mevaluating in mode val_sampling
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39msaving current epoch 1 at rank [[0]]
+[0m[39mtrained epoch 1: took 116.75 sec. (97.16 train / 19.59 val)
+[0m[39mplotting predictions from validation sampling.
+[0mlen(gt_boxes) :  0
+[39mstarting training epoch 2
+[0m[39mtr. (ep. 2) batch  1/50 || loss: 2.08, class: 0.70, bbox: 1.39
+[0m[39mtr. (ep. 2) batch  2/50 || loss: 1.05, class: 0.69, bbox: 0.35
+[0m[39mtr. (ep. 2) batch  3/50 || loss: 0.87, class: 0.52, bbox: 0.35
+[0m[39mtr. (ep. 2) batch  4/50 || loss: 1.25, class: 0.69, bbox: 0.56
+[0m[39mtr. (ep. 2) batch  5/50 || loss: 1.33, class: 0.69, bbox: 0.64
+[0m[39mtr. (ep. 2) batch  6/50 || loss: 1.24, class: 0.69, bbox: 0.54
+[0m[39mtr. (ep. 2) batch  7/50 || loss: 1.78, class: 0.69, bbox: 1.08
+[0m[39mtr. (ep. 2) batch  8/50 || loss: 1.25, class: 0.61, bbox: 0.65
+[0m[39mtr. (ep. 2) batch  9/50 || loss: 1.44, class: 0.69, bbox: 0.74
+[0m[39mtr. (ep. 2) batch 10/50 || loss: 1.07, class: 0.61, bbox: 0.46
+[0m[39mtr. (ep. 2) batch 11/50 || loss: 1.27, class: 0.61, bbox: 0.66
+[0m[39mtr. (ep. 2) batch 12/50 || loss: 1.66, class: 0.70, bbox: 0.96
+[0m[39mtr. (ep. 2) batch 13/50 || loss: 0.80, class: 0.52, bbox: 0.28
+[0m[39mtr. (ep. 2) batch 14/50 || loss: 1.27, class: 0.61, bbox: 0.66
+[0m[39mtr. (ep. 2) batch 15/50 || loss: 0.85, class: 0.52, bbox: 0.33
+[0m[39mtr. (ep. 2) batch 16/50 || loss: 1.26, class: 0.61, bbox: 0.65
+[0m[39mtr. (ep. 2) batch 17/50 || loss: 1.08, class: 0.61, bbox: 0.47
+[0m[39mtr. (ep. 2) batch 18/50 || loss: 0.89, class: 0.52, bbox: 0.37
+[0m[39mtr. (ep. 2) batch 19/50 || loss: 1.27, class: 0.69, bbox: 0.58
+[0m[39mtr. (ep. 2) batch 20/50 || loss: 0.66, class: 0.43, bbox: 0.22
+[0m[39mtr. (ep. 2) batch 21/50 || loss: 1.60, class: 0.69, bbox: 0.91
+[0m[39mtr. (ep. 2) batch 22/50 || loss: 1.35, class: 0.69, bbox: 0.65
+[0m[39mtr. (ep. 2) batch 23/50 || loss: 0.75, class: 0.52, bbox: 0.23
+[0m[39mtr. (ep. 2) batch 24/50 || loss: 1.28, class: 0.69, bbox: 0.58
+[0m[39mtr. (ep. 2) batch 25/50 || loss: 1.37, class: 0.61, bbox: 0.76
+[0m[39mtr. (ep. 2) batch 26/50 || loss: 0.85, class: 0.52, bbox: 0.33
+[0m[39mtr. (ep. 2) batch 27/50 || loss: 0.70, class: 0.43, bbox: 0.27
+[0m[39mtr. (ep. 2) batch 28/50 || loss: 0.98, class: 0.61, bbox: 0.37
+[0m[39mtr. (ep. 2) batch 29/50 || loss: 1.35, class: 0.69, bbox: 0.66
+[0m[39mtr. (ep. 2) batch 30/50 || loss: 0.81, class: 0.52, bbox: 0.29
+[0m[39mtr. (ep. 2) batch 31/50 || loss: 0.85, class: 0.52, bbox: 0.33
+[0m[39mtr. (ep. 2) batch 32/50 || loss: 0.87, class: 0.52, bbox: 0.35
+[0m[39mtr. (ep. 2) batch 33/50 || loss: 0.93, class: 0.52, bbox: 0.41
+[0m[39mtr. (ep. 2) batch 34/50 || loss: 1.36, class: 0.69, bbox: 0.66
+[0m[39mtr. (ep. 2) batch 35/50 || loss: 1.38, class: 0.61, bbox: 0.77
+[0m[39mtr. (ep. 2) batch 36/50 || loss: 1.19, class: 0.61, bbox: 0.59
+[0m[39mtr. (ep. 2) batch 37/50 || loss: 0.90, class: 0.52, bbox: 0.38
+[0m[39mtr. (ep. 2) batch 38/50 || loss: 1.08, class: 0.61, bbox: 0.47
+[0m[39mtr. (ep. 2) batch 39/50 || loss: 1.72, class: 0.69, bbox: 1.02
+[0m[39mtr. (ep. 2) batch 40/50 || loss: 1.31, class: 0.61, bbox: 0.71
+[0m[39mtr. (ep. 2) batch 41/50 || loss: 1.28, class: 0.69, bbox: 0.59
+[0m[39mtr. (ep. 2) batch 42/50 || loss: 0.59, class: 0.43, bbox: 0.16
+[0m[39mtr. (ep. 2) batch 43/50 || loss: 0.98, class: 0.61, bbox: 0.38
+[0m[39mtr. (ep. 2) batch 44/50 || loss: 1.39, class: 0.69, bbox: 0.69
+[0m[39mtr. (ep. 2) batch 45/50 || loss: 0.87, class: 0.52, bbox: 0.35
+[0m[39mtr. (ep. 2) batch 46/50 || loss: 0.99, class: 0.61, bbox: 0.39
+[0m[39mtr. (ep. 2) batch 47/50 || loss: 1.39, class: 0.61, bbox: 0.79
+[0m[39mtr. (ep. 2) batch 48/50 || loss: 1.31, class: 0.61, bbox: 0.70
+[0m[39mtr. (ep. 2) batch 49/50 || loss: 1.21, class: 0.69, bbox: 0.52
+[0m[39mtr. (ep. 2) batch 50/50 || loss: 1.72, class: 0.69, bbox: 1.03
+[0m[39mevaluating in mode train
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39mstarting validation in mode val_sampling.
+[0m[39mval. (ep. 2) batch 1/10 || loss: 0.84, class: 0.61, bbox: 0.24
+[0m[39mval. (ep. 2) batch 2/10 || loss: 0.73, class: 0.52, bbox: 0.21
+[0m[39mval. (ep. 2) batch 3/10 || loss: 0.97, class: 0.61, bbox: 0.36
+[0m[39mval. (ep. 2) batch 4/10 || loss: 0.99, class: 0.61, bbox: 0.38
+[0m[39mval. (ep. 2) batch 5/10 || loss: 0.60, class: 0.43, bbox: 0.17
+[0m[39mval. (ep. 2) batch 6/10 || loss: 0.87, class: 0.52, bbox: 0.35
+[0m[39mval. (ep. 2) batch 7/10 || loss: 1.25, class: 0.69, bbox: 0.55
+[0m[39mval. (ep. 2) batch 8/10 || loss: 1.39, class: 0.69, bbox: 0.70
+[0m[39mval. (ep. 2) batch 9/10 || loss: 0.75, class: 0.43, bbox: 0.32
+[0m[39mval. (ep. 2) batch 10/10 || loss: 1.11, class: 0.69, bbox: 0.41
+[0m[39mevaluating in mode val_sampling
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39msaving current epoch 2 at rank [[0]]
+[0m[39mtrained epoch 2: took 92.40 sec. (81.82 train / 10.58 val)
+[0m[39mplotting predictions from validation sampling.
+[0mlen(gt_boxes) :  2
+[39mstarting training epoch 3
+[0m[39mtr. (ep. 3) batch  1/50 || loss: 0.72, class: 0.52, bbox: 0.20
+[0m[39mtr. (ep. 3) batch  2/50 || loss: 1.47, class: 0.61, bbox: 0.86
+[0m[39mtr. (ep. 3) batch  3/50 || loss: 0.88, class: 0.52, bbox: 0.36
+[0m[39mtr. (ep. 3) batch  4/50 || loss: 1.01, class: 0.61, bbox: 0.41
+[0m[39mtr. (ep. 3) batch  5/50 || loss: 1.27, class: 0.69, bbox: 0.57
+[0m[39mtr. (ep. 3) batch  6/50 || loss: 1.03, class: 0.61, bbox: 0.42
+[0m[39mtr. (ep. 3) batch  7/50 || loss: 0.85, class: 0.52, bbox: 0.33
+[0m[39mtr. (ep. 3) batch  8/50 || loss: 0.69, class: 0.52, bbox: 0.17
+[0m[39mtr. (ep. 3) batch  9/50 || loss: 1.02, class: 0.61, bbox: 0.42
+[0m[39mtr. (ep. 3) batch 10/50 || loss: 0.73, class: 0.52, bbox: 0.21
+[0m[39mtr. (ep. 3) batch 11/50 || loss: 0.90, class: 0.61, bbox: 0.30
+[0m[39mtr. (ep. 3) batch 12/50 || loss: 0.88, class: 0.52, bbox: 0.36
+[0m[39mtr. (ep. 3) batch 13/50 || loss: 1.02, class: 0.61, bbox: 0.42
+[0m[39mtr. (ep. 3) batch 14/50 || loss: 1.33, class: 0.69, bbox: 0.64
+[0m[39mtr. (ep. 3) batch 15/50 || loss: 0.69, class: 0.52, bbox: 0.17
+[0m[39mtr. (ep. 3) batch 16/50 || loss: 0.54, class: 0.43, bbox: 0.11
+[0m[39mtr. (ep. 3) batch 17/50 || loss: 1.07, class: 0.61, bbox: 0.47
+[0m[39mtr. (ep. 3) batch 18/50 || loss: 1.15, class: 0.69, bbox: 0.45
+[0m[39mtr. (ep. 3) batch 19/50 || loss: 2.16, class: 0.69, bbox: 1.47
+[0m[39mtr. (ep. 3) batch 20/50 || loss: 0.98, class: 0.61, bbox: 0.37
+[0m[39mtr. (ep. 3) batch 21/50 || loss: 0.99, class: 0.61, bbox: 0.38
+[0m[39mtr. (ep. 3) batch 22/50 || loss: 0.96, class: 0.61, bbox: 0.35
+[0m[39mtr. (ep. 3) batch 23/50 || loss: 0.84, class: 0.52, bbox: 0.32
+[0m[39mtr. (ep. 3) batch 24/50 || loss: 1.17, class: 0.61, bbox: 0.57
+[0m[39mtr. (ep. 3) batch 25/50 || loss: 1.54, class: 0.69, bbox: 0.85
+[0m[39mtr. (ep. 3) batch 26/50 || loss: 1.25, class: 0.61, bbox: 0.65
+[0m[39mtr. (ep. 3) batch 27/50 || loss: 0.95, class: 0.61, bbox: 0.35
+[0m[39mtr. (ep. 3) batch 28/50 || loss: 0.88, class: 0.52, bbox: 0.36
+[0m[39mtr. (ep. 3) batch 29/50 || loss: 1.04, class: 0.61, bbox: 0.43
+[0m[39mtr. (ep. 3) batch 30/50 || loss: 1.01, class: 0.61, bbox: 0.40
+[0m[39mtr. (ep. 3) batch 31/50 || loss: 1.25, class: 0.61, bbox: 0.65
+[0m[39mtr. (ep. 3) batch 32/50 || loss: 1.23, class: 0.61, bbox: 0.63
+[0m[39mtr. (ep. 3) batch 33/50 || loss: 1.49, class: 0.69, bbox: 0.80
+[0m[39mtr. (ep. 3) batch 34/50 || loss: 1.52, class: 0.69, bbox: 0.82
+[0m[39mtr. (ep. 3) batch 35/50 || loss: 1.19, class: 0.61, bbox: 0.58
+[0m[39mtr. (ep. 3) batch 36/50 || loss: 0.54, class: 0.43, bbox: 0.11
+[0m[39mtr. (ep. 3) batch 37/50 || loss: 1.02, class: 0.61, bbox: 0.41
+[0m[39mtr. (ep. 3) batch 38/50 || loss: 1.23, class: 0.69, bbox: 0.53
+[0m[39mtr. (ep. 3) batch 39/50 || loss: 1.15, class: 0.69, bbox: 0.46
+[0m[39mtr. (ep. 3) batch 40/50 || loss: 1.44, class: 0.69, bbox: 0.74
+[0m[39mtr. (ep. 3) batch 41/50 || loss: 1.28, class: 0.69, bbox: 0.59
+[0m[39mtr. (ep. 3) batch 42/50 || loss: 1.36, class: 0.61, bbox: 0.75
+[0m[39mtr. (ep. 3) batch 43/50 || loss: 1.43, class: 0.69, bbox: 0.73
+[0m[39mtr. (ep. 3) batch 44/50 || loss: 1.13, class: 0.61, bbox: 0.52
+[0m[39mtr. (ep. 3) batch 45/50 || loss: 1.29, class: 0.69, bbox: 0.60
+[0m[39mtr. (ep. 3) batch 46/50 || loss: 1.41, class: 0.52, bbox: 0.89
+[0m[39mtr. (ep. 3) batch 47/50 || loss: 0.78, class: 0.52, bbox: 0.26
+[0m[39mtr. (ep. 3) batch 48/50 || loss: 0.95, class: 0.52, bbox: 0.43
+[0m[39mtr. (ep. 3) batch 49/50 || loss: 0.93, class: 0.61, bbox: 0.32
+[0m[39mtr. (ep. 3) batch 50/50 || loss: 1.34, class: 0.69, bbox: 0.65
+[0m[39mevaluating in mode train
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39mstarting validation in mode val_sampling.
+[0m[39mval. (ep. 3) batch 1/10 || loss: 0.75, class: 0.52, bbox: 0.23
+[0m[39mval. (ep. 3) batch 2/10 || loss: 0.70, class: 0.52, bbox: 0.19
+[0m[39mval. (ep. 3) batch 3/10 || loss: 0.85, class: 0.52, bbox: 0.33
+[0m[39mval. (ep. 3) batch 4/10 || loss: 0.77, class: 0.52, bbox: 0.25
+[0m[39mval. (ep. 3) batch 5/10 || loss: 0.94, class: 0.61, bbox: 0.33
+[0m[39mval. (ep. 3) batch 6/10 || loss: 0.83, class: 0.52, bbox: 0.31
+[0m[39mval. (ep. 3) batch 7/10 || loss: 0.76, class: 0.52, bbox: 0.24
+[0m[39mval. (ep. 3) batch 8/10 || loss: 1.30, class: 0.69, bbox: 0.61
+[0m[39mval. (ep. 3) batch 9/10 || loss: 1.39, class: 0.61, bbox: 0.78
+[0m[39mval. (ep. 3) batch 10/10 || loss: 1.13, class: 0.61, bbox: 0.53
+[0m[39mevaluating in mode val_sampling
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39msaving current epoch 3 at rank [[0]]
+[0m[39mtrained epoch 3: took 93.00 sec. (81.86 train / 11.14 val)
+[0m[39mplotting predictions from validation sampling.
+[0mlen(gt_boxes) :  0
+[39mstarting training epoch 4
+[0m[39mtr. (ep. 4) batch  1/50 || loss: 1.13, class: 0.69, bbox: 0.44
+[0m[39mtr. (ep. 4) batch  2/50 || loss: 1.96, class: 0.69, bbox: 1.27
+[0m[39mtr. (ep. 4) batch  3/50 || loss: 1.19, class: 0.69, bbox: 0.49
+[0m[39mtr. (ep. 4) batch  4/50 || loss: 1.30, class: 0.61, bbox: 0.69
+[0m[39mtr. (ep. 4) batch  5/50 || loss: 1.25, class: 0.61, bbox: 0.64
+[0m[39mtr. (ep. 4) batch  6/50 || loss: 1.21, class: 0.69, bbox: 0.52
+[0m[39mtr. (ep. 4) batch  7/50 || loss: 0.66, class: 0.52, bbox: 0.14
+[0m[39mtr. (ep. 4) batch  8/50 || loss: 1.36, class: 0.69, bbox: 0.66
+[0m[39mtr. (ep. 4) batch  9/50 || loss: 1.00, class: 0.61, bbox: 0.40
+[0m[39mtr. (ep. 4) batch 10/50 || loss: 1.65, class: 0.69, bbox: 0.96
+[0m[39mtr. (ep. 4) batch 11/50 || loss: 0.96, class: 0.61, bbox: 0.36
+[0m[39mtr. (ep. 4) batch 12/50 || loss: 1.35, class: 0.69, bbox: 0.66
+[0m[39mtr. (ep. 4) batch 13/50 || loss: 1.20, class: 0.61, bbox: 0.59
+[0m[39mtr. (ep. 4) batch 14/50 || loss: 1.01, class: 0.61, bbox: 0.41
+[0m[39mtr. (ep. 4) batch 15/50 || loss: 1.15, class: 0.61, bbox: 0.55
+[0m[39mtr. (ep. 4) batch 16/50 || loss: 1.12, class: 0.69, bbox: 0.43
+[0m[39mtr. (ep. 4) batch 17/50 || loss: 0.99, class: 0.61, bbox: 0.38
+[0m[39mtr. (ep. 4) batch 18/50 || loss: 0.75, class: 0.52, bbox: 0.23
+[0m[39mtr. (ep. 4) batch 19/50 || loss: 0.98, class: 0.61, bbox: 0.37
+[0m[39mtr. (ep. 4) batch 20/50 || loss: 0.83, class: 0.52, bbox: 0.31
+[0m[39mtr. (ep. 4) batch 21/50 || loss: 0.97, class: 0.61, bbox: 0.36
+[0m[39mtr. (ep. 4) batch 22/50 || loss: 1.71, class: 0.69, bbox: 1.02
+[0m[39mtr. (ep. 4) batch 23/50 || loss: 0.99, class: 0.61, bbox: 0.38
+[0m[39mtr. (ep. 4) batch 24/50 || loss: 1.09, class: 0.61, bbox: 0.49
+[0m[39mtr. (ep. 4) batch 25/50 || loss: 0.69, class: 0.52, bbox: 0.17
+[0m[39mtr. (ep. 4) batch 26/50 || loss: 0.98, class: 0.61, bbox: 0.37
+[0m[39mtr. (ep. 4) batch 27/50 || loss: 1.12, class: 0.61, bbox: 0.51
+[0m[39mtr. (ep. 4) batch 28/50 || loss: 0.95, class: 0.52, bbox: 0.43
+[0m[39mtr. (ep. 4) batch 29/50 || loss: 0.99, class: 0.61, bbox: 0.38
+[0m[39mtr. (ep. 4) batch 30/50 || loss: 1.06, class: 0.61, bbox: 0.46
+[0m[39mtr. (ep. 4) batch 31/50 || loss: 1.52, class: 0.69, bbox: 0.82
+[0m[39mtr. (ep. 4) batch 32/50 || loss: 0.86, class: 0.52, bbox: 0.34
+[0m[39mtr. (ep. 4) batch 33/50 || loss: 1.22, class: 0.61, bbox: 0.61
+[0m[39mtr. (ep. 4) batch 34/50 || loss: 0.54, class: 0.43, bbox: 0.11
+[0m[39mtr. (ep. 4) batch 35/50 || loss: 1.53, class: 0.69, bbox: 0.83
+[0m[39mtr. (ep. 4) batch 36/50 || loss: 1.44, class: 0.61, bbox: 0.83
+[0m[39mtr. (ep. 4) batch 37/50 || loss: 1.37, class: 0.61, bbox: 0.76
+[0m[39mtr. (ep. 4) batch 38/50 || loss: 0.89, class: 0.52, bbox: 0.37
+[0m[39mtr. (ep. 4) batch 39/50 || loss: 1.47, class: 0.61, bbox: 0.87
+[0m[39mtr. (ep. 4) batch 40/50 || loss: 1.01, class: 0.61, bbox: 0.41
+[0m[39mtr. (ep. 4) batch 41/50 || loss: 1.04, class: 0.52, bbox: 0.52
+[0m[39mtr. (ep. 4) batch 42/50 || loss: 2.19, class: 0.69, bbox: 1.49
+[0m[39mtr. (ep. 4) batch 43/50 || loss: 0.97, class: 0.61, bbox: 0.36
+[0m[39mtr. (ep. 4) batch 44/50 || loss: 1.29, class: 0.61, bbox: 0.68
+[0m[39mtr. (ep. 4) batch 45/50 || loss: 1.30, class: 0.69, bbox: 0.60
+[0m[39mtr. (ep. 4) batch 46/50 || loss: 1.84, class: 0.61, bbox: 1.23
+[0m[39mtr. (ep. 4) batch 47/50 || loss: 1.31, class: 0.61, bbox: 0.70
+[0m[39mtr. (ep. 4) batch 48/50 || loss: 1.48, class: 0.61, bbox: 0.88
+[0m[39mtr. (ep. 4) batch 49/50 || loss: 0.79, class: 0.52, bbox: 0.27
+[0m[39mtr. (ep. 4) batch 50/50 || loss: 1.17, class: 0.61, bbox: 0.57
+[0m[39mevaluating in mode train
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39mstarting validation in mode val_sampling.
+[0m[39mval. (ep. 4) batch 1/10 || loss: 1.16, class: 0.61, bbox: 0.56
+[0m[39mval. (ep. 4) batch 2/10 || loss: 1.13, class: 0.61, bbox: 0.52
+[0m[39mval. (ep. 4) batch 3/10 || loss: 0.77, class: 0.52, bbox: 0.25
+[0m[39mval. (ep. 4) batch 4/10 || loss: 1.08, class: 0.61, bbox: 0.47
+[0m[39mval. (ep. 4) batch 5/10 || loss: 0.65, class: 0.43, bbox: 0.22
+[0m[39mval. (ep. 4) batch 6/10 || loss: 0.58, class: 0.43, bbox: 0.15
+[0m[39mval. (ep. 4) batch 7/10 || loss: 1.07, class: 0.52, bbox: 0.55
+[0m[39mval. (ep. 4) batch 8/10 || loss: 1.09, class: 0.61, bbox: 0.48
+[0m[39mval. (ep. 4) batch 9/10 || loss: 1.36, class: 0.69, bbox: 0.67
+[0m[39mval. (ep. 4) batch 10/10 || loss: 1.01, class: 0.61, bbox: 0.40
+[0m[39mevaluating in mode val_sampling
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39msaving current epoch 4 at rank [[3]]
+[0m[39mtrained epoch 4: took 92.80 sec. (83.25 train / 9.55 val)
+[0m[39mplotting predictions from validation sampling.
+[0mlen(gt_boxes) :  3
+[39mstarting training epoch 5
+[0m[39mtr. (ep. 5) batch  1/50 || loss: 0.55, class: 0.43, bbox: 0.11
+[0m[39mtr. (ep. 5) batch  2/50 || loss: 1.42, class: 0.61, bbox: 0.81
+[0m[39mtr. (ep. 5) batch  3/50 || loss: 1.36, class: 0.61, bbox: 0.76
+[0m[39mtr. (ep. 5) batch  4/50 || loss: 1.22, class: 0.61, bbox: 0.62
+[0m[39mtr. (ep. 5) batch  5/50 || loss: 0.80, class: 0.52, bbox: 0.28
+[0m[39mtr. (ep. 5) batch  6/50 || loss: 2.13, class: 0.69, bbox: 1.44
+[0m[39mtr. (ep. 5) batch  7/50 || loss: 0.80, class: 0.52, bbox: 0.28
+[0m[39mtr. (ep. 5) batch  8/50 || loss: 0.68, class: 0.43, bbox: 0.24
+[0m[39mtr. (ep. 5) batch  9/50 || loss: 1.36, class: 0.69, bbox: 0.67
+[0m[39mtr. (ep. 5) batch 10/50 || loss: 0.93, class: 0.61, bbox: 0.32
+[0m[39mtr. (ep. 5) batch 11/50 || loss: 1.30, class: 0.61, bbox: 0.69
+[0m[39mtr. (ep. 5) batch 12/50 || loss: 1.23, class: 0.61, bbox: 0.62
+[0m[39mtr. (ep. 5) batch 13/50 || loss: 0.74, class: 0.43, bbox: 0.31
+[0m[39mtr. (ep. 5) batch 14/50 || loss: 1.08, class: 0.61, bbox: 0.47
+[0m[39mtr. (ep. 5) batch 15/50 || loss: 1.11, class: 0.69, bbox: 0.41
+[0m[39mtr. (ep. 5) batch 16/50 || loss: 1.07, class: 0.61, bbox: 0.46
+[0m[39mtr. (ep. 5) batch 17/50 || loss: 1.19, class: 0.69, bbox: 0.50
+[0m[39mtr. (ep. 5) batch 18/50 || loss: 1.37, class: 0.61, bbox: 0.76
+[0m[39mtr. (ep. 5) batch 19/50 || loss: 0.70, class: 0.52, bbox: 0.18
+[0m[39mtr. (ep. 5) batch 20/50 || loss: 1.54, class: 0.52, bbox: 1.02
+[0m[39mtr. (ep. 5) batch 21/50 || loss: 1.13, class: 0.61, bbox: 0.52
+[0m[39mtr. (ep. 5) batch 22/50 || loss: 2.01, class: 0.69, bbox: 1.31
+[0m[39mtr. (ep. 5) batch 23/50 || loss: 1.43, class: 0.61, bbox: 0.82
+[0m[39mtr. (ep. 5) batch 24/50 || loss: 0.70, class: 0.52, bbox: 0.18
+[0m[39mtr. (ep. 5) batch 25/50 || loss: 0.92, class: 0.52, bbox: 0.40
+[0m[39mtr. (ep. 5) batch 26/50 || loss: 1.50, class: 0.69, bbox: 0.81
+[0m[39mtr. (ep. 5) batch 27/50 || loss: 0.84, class: 0.52, bbox: 0.32
+[0m[39mtr. (ep. 5) batch 28/50 || loss: 0.56, class: 0.43, bbox: 0.13
+[0m[39mtr. (ep. 5) batch 29/50 || loss: 1.21, class: 0.69, bbox: 0.52
+[0m[39mtr. (ep. 5) batch 30/50 || loss: 1.06, class: 0.52, bbox: 0.54
+[0m[39mtr. (ep. 5) batch 31/50 || loss: 1.45, class: 0.61, bbox: 0.85
+[0m[39mtr. (ep. 5) batch 32/50 || loss: 1.10, class: 0.61, bbox: 0.49
+[0m[39mtr. (ep. 5) batch 33/50 || loss: 0.77, class: 0.52, bbox: 0.26
+[0m[39mtr. (ep. 5) batch 34/50 || loss: 0.95, class: 0.52, bbox: 0.43
+[0m[39mtr. (ep. 5) batch 35/50 || loss: 1.27, class: 0.61, bbox: 0.66
+[0m[39mtr. (ep. 5) batch 36/50 || loss: 1.30, class: 0.69, bbox: 0.61
+[0m[39mtr. (ep. 5) batch 37/50 || loss: 0.77, class: 0.52, bbox: 0.25
+[0m[39mtr. (ep. 5) batch 38/50 || loss: 1.53, class: 0.61, bbox: 0.93
+[0m[39mtr. (ep. 5) batch 39/50 || loss: 0.85, class: 0.43, bbox: 0.42
+[0m[39mtr. (ep. 5) batch 40/50 || loss: 1.73, class: 0.69, bbox: 1.03
+[0m[39mtr. (ep. 5) batch 41/50 || loss: 1.27, class: 0.61, bbox: 0.66
+[0m[39mtr. (ep. 5) batch 42/50 || loss: 1.22, class: 0.61, bbox: 0.62
+[0m[39mtr. (ep. 5) batch 43/50 || loss: 1.10, class: 0.52, bbox: 0.58
+[0m[39mtr. (ep. 5) batch 44/50 || loss: 0.69, class: 0.52, bbox: 0.17
+[0m[39mtr. (ep. 5) batch 45/50 || loss: 0.99, class: 0.52, bbox: 0.47
+[0m[39mtr. (ep. 5) batch 46/50 || loss: 1.61, class: 0.69, bbox: 0.91
+[0m[39mtr. (ep. 5) batch 47/50 || loss: 0.96, class: 0.61, bbox: 0.36
+[0m[39mtr. (ep. 5) batch 48/50 || loss: 1.47, class: 0.61, bbox: 0.87
+[0m[39mtr. (ep. 5) batch 49/50 || loss: 1.60, class: 0.61, bbox: 0.99
+[0m[39mtr. (ep. 5) batch 50/50 || loss: 1.00, class: 0.52, bbox: 0.48
+[0m[39mevaluating in mode train
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39mstarting validation in mode val_sampling.
+[0m[39mval. (ep. 5) batch 1/10 || loss: 1.05, class: 0.61, bbox: 0.45
+[0m[39mval. (ep. 5) batch 2/10 || loss: 0.92, class: 0.61, bbox: 0.31
+[0m[39mval. (ep. 5) batch 3/10 || loss: 1.26, class: 0.69, bbox: 0.57
+[0m[39mval. (ep. 5) batch 4/10 || loss: 1.26, class: 0.69, bbox: 0.57
+[0m[39mval. (ep. 5) batch 5/10 || loss: 0.52, class: 0.43, bbox: 0.09
+[0m[39mval. (ep. 5) batch 6/10 || loss: 1.22, class: 0.69, bbox: 0.53
+[0m[39mval. (ep. 5) batch 7/10 || loss: 0.68, class: 0.43, bbox: 0.25
+[0m[39mval. (ep. 5) batch 8/10 || loss: 0.95, class: 0.61, bbox: 0.35
+[0m[39mval. (ep. 5) batch 9/10 || loss: 1.24, class: 0.61, bbox: 0.64
+[0m[39mval. (ep. 5) batch 10/10 || loss: 1.18, class: 0.69, bbox: 0.48
+[0m[39mevaluating in mode val_sampling
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39msaving current epoch 5 at rank [[0]]
+[0m[39mtrained epoch 5: took 92.19 sec. (82.45 train / 9.74 val)
+[0m[39mplotting predictions from validation sampling.
+[0mlen(gt_boxes) :  3
+[39mstarting training epoch 6
+[0m[39mtr. (ep. 6) batch  1/50 || loss: 1.21, class: 0.69, bbox: 0.52
+[0m[39mtr. (ep. 6) batch  2/50 || loss: 0.85, class: 0.52, bbox: 0.33
+[0m[39mtr. (ep. 6) batch  3/50 || loss: 0.75, class: 0.52, bbox: 0.23
+[0m[39mtr. (ep. 6) batch  4/50 || loss: 1.07, class: 0.61, bbox: 0.47
+[0m[39mtr. (ep. 6) batch  5/50 || loss: 1.23, class: 0.69, bbox: 0.53
+[0m[39mtr. (ep. 6) batch  6/50 || loss: 1.54, class: 0.61, bbox: 0.93
+[0m[39mtr. (ep. 6) batch  7/50 || loss: 1.43, class: 0.69, bbox: 0.73
+[0m[39mtr. (ep. 6) batch  8/50 || loss: 1.12, class: 0.69, bbox: 0.43
+[0m[39mtr. (ep. 6) batch  9/50 || loss: 1.40, class: 0.69, bbox: 0.71
+[0m[39mtr. (ep. 6) batch 10/50 || loss: 0.91, class: 0.61, bbox: 0.31
+[0m[39mtr. (ep. 6) batch 11/50 || loss: 0.79, class: 0.52, bbox: 0.27
+[0m[39mtr. (ep. 6) batch 12/50 || loss: 1.04, class: 0.61, bbox: 0.44
+[0m[39mtr. (ep. 6) batch 13/50 || loss: 1.13, class: 0.69, bbox: 0.44
+[0m[39mtr. (ep. 6) batch 14/50 || loss: 1.25, class: 0.61, bbox: 0.65
+[0m[39mtr. (ep. 6) batch 15/50 || loss: 1.31, class: 0.61, bbox: 0.70
+[0m[39mtr. (ep. 6) batch 16/50 || loss: 1.77, class: 0.69, bbox: 1.07
+[0m[39mtr. (ep. 6) batch 17/50 || loss: 0.83, class: 0.61, bbox: 0.22
+[0m[39mtr. (ep. 6) batch 18/50 || loss: 0.84, class: 0.43, bbox: 0.41
+[0m[39mtr. (ep. 6) batch 19/50 || loss: 1.23, class: 0.69, bbox: 0.54
+[0m[39mtr. (ep. 6) batch 20/50 || loss: 1.09, class: 0.61, bbox: 0.48
+[0m[39mtr. (ep. 6) batch 21/50 || loss: 0.84, class: 0.52, bbox: 0.33
+[0m[39mtr. (ep. 6) batch 22/50 || loss: 1.28, class: 0.61, bbox: 0.67
+[0m[39mtr. (ep. 6) batch 23/50 || loss: 0.76, class: 0.52, bbox: 0.24
+[0m[39mtr. (ep. 6) batch 24/50 || loss: 1.27, class: 0.61, bbox: 0.66
+[0m[39mtr. (ep. 6) batch 25/50 || loss: 1.05, class: 0.52, bbox: 0.53
+[0m[39mtr. (ep. 6) batch 26/50 || loss: 1.11, class: 0.61, bbox: 0.51
+[0m[39mtr. (ep. 6) batch 27/50 || loss: 1.71, class: 0.69, bbox: 1.02
+[0m[39mtr. (ep. 6) batch 28/50 || loss: 0.72, class: 0.52, bbox: 0.20
+[0m[39mtr. (ep. 6) batch 29/50 || loss: 0.81, class: 0.52, bbox: 0.30
+[0m[39mtr. (ep. 6) batch 30/50 || loss: 0.94, class: 0.61, bbox: 0.34
+[0m[39mtr. (ep. 6) batch 31/50 || loss: 1.22, class: 0.69, bbox: 0.53
+[0m[39mtr. (ep. 6) batch 32/50 || loss: 0.78, class: 0.52, bbox: 0.26
+[0m[39mtr. (ep. 6) batch 33/50 || loss: 1.22, class: 0.69, bbox: 0.53
+[0m[39mtr. (ep. 6) batch 34/50 || loss: 1.20, class: 0.61, bbox: 0.60
+[0m[39mtr. (ep. 6) batch 35/50 || loss: 1.21, class: 0.61, bbox: 0.60
+[0m[39mtr. (ep. 6) batch 36/50 || loss: 0.85, class: 0.52, bbox: 0.33
+[0m[39mtr. (ep. 6) batch 37/50 || loss: 0.61, class: 0.43, bbox: 0.18
+[0m[39mtr. (ep. 6) batch 38/50 || loss: 1.31, class: 0.61, bbox: 0.70
+[0m[39mtr. (ep. 6) batch 39/50 || loss: 1.79, class: 0.69, bbox: 1.10
+[0m[39mtr. (ep. 6) batch 40/50 || loss: 0.96, class: 0.61, bbox: 0.36
+[0m[39mtr. (ep. 6) batch 41/50 || loss: 1.01, class: 0.61, bbox: 0.40
+[0m[39mtr. (ep. 6) batch 42/50 || loss: 0.57, class: 0.43, bbox: 0.14
+[0m[39mtr. (ep. 6) batch 43/50 || loss: 1.73, class: 0.69, bbox: 1.03
+[0m[39mtr. (ep. 6) batch 44/50 || loss: 1.31, class: 0.69, bbox: 0.61
+[0m[39mtr. (ep. 6) batch 45/50 || loss: 1.64, class: 0.69, bbox: 0.95
+[0m[39mtr. (ep. 6) batch 46/50 || loss: 1.33, class: 0.61, bbox: 0.73
+[0m[39mtr. (ep. 6) batch 47/50 || loss: 1.07, class: 0.61, bbox: 0.46
+[0m[39mtr. (ep. 6) batch 48/50 || loss: 1.54, class: 0.69, bbox: 0.85
+[0m[39mtr. (ep. 6) batch 49/50 || loss: 1.30, class: 0.52, bbox: 0.79
+[0m[39mtr. (ep. 6) batch 50/50 || loss: 1.55, class: 0.69, bbox: 0.85
+[0m[39mevaluating in mode train
+[0m[39mevaluating with conf_thresh: 0.1 match_iou: 0.1
+[0mPlotting Stat Curves
+Plotting Stat Curves
+[39mstarting validation in mode val_sampling.
+[0m[39mval. (ep. 6) batch 1/10 || loss: 1.27, class: 0.69, bbox: 0.58
+[0m[39mval. (ep. 6) batch 2/10 || loss: 1.25, class: 0.69, bbox: 0.55
+[0m[39mval. (ep. 6) batch 3/10 || loss: 0.79, class: 0.52, bbox: 0.27
+[0m[39mval. (ep. 6) batch 4/10 || loss: 1.65, class: 0.69, bbox: 0.96
+[0m[39mval. (ep. 6) batch 5/10 || loss: 1.17, class: 0.61, bbox: 0.56
+[0m

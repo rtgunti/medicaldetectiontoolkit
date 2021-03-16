@@ -46,10 +46,10 @@ def plot_test_prediction(results_list, cf, outfile=None):
         patient_ix = p_ind
         p_res = results_list[patient_ix]
         p_id = p_res[1]
-        print(p_id)
+        print("Plotting for ",p_id)
         if p_id not in p_ids:
             continue
-        outfile = os.path.join(cf.plot_dir, 'test_example_{}.png'.format(p_id))
+        outfile = os.path.join(cf.plot_dir, 'test_{}.png'.format(p_id))
         data = np.load(os.path.join(pp_data_path, p_res[1] + '_img.npy'))[None]
         segs = np.load(os.path.join(pp_data_path, p_res[1] + '_rois.npy'))[None]
         
@@ -142,6 +142,7 @@ def plot_test_prediction(results_list, cf, outfile=None):
                                 else:
                                     continue
                             elif box['box_type'] == 'gt':
+#                                 print(coords)
                                 plot_text = True
                                 score_text = int(box['box_label'])
                                 score_font_size = 7
@@ -165,6 +166,7 @@ def plot_test_prediction(results_list, cf, outfile=None):
         except:
             raise Warning('failed to save plot.')
         plt.close(fig)
+#         break
 
         
 def plot_batch_prediction(batch, results_dict, cf, outfile= None):
@@ -433,7 +435,6 @@ def plot_pr_curve(stats, outfile):
         plt.close()
 
 def plot_stat_curves(stats, outfile):
-
 #     for c in ['roc', 'prc']:
     print("Plotting Stat Curves")
     for c in ['prc']:

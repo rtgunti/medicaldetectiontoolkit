@@ -165,7 +165,6 @@ if __name__ == '__main__':
     
     # setting device on GPU if available, else CPU
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Using device:', device)
     if device.type == 'cuda' : print(torch.cuda.get_device_name(0))
     
     if args.mode == 'train' or args.mode == 'train_test':

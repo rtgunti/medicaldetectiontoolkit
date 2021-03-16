@@ -52,7 +52,7 @@ class configs(DefaultConfigs):
         # one out of [2, 3]. dimension the model operates in.
         self.dim = 3
 
-        # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn'].
+        # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn', 'decoupled_refinement'].
         self.model = 'retina_net'
         
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
@@ -215,6 +215,7 @@ class configs(DefaultConfigs):
          'ufrcnn': self.add_mrcnn_configs,
          'retina_net': self.add_mrcnn_configs,
          'retina_unet': self.add_mrcnn_configs,
+         'decoupled_refinement' : self.add_mrcnn_configs,
         }[self.model]()
 
 
@@ -308,8 +309,8 @@ class configs(DefaultConfigs):
             self.scale = self.scale[:4]
 
         # pre-selection in proposal-layer (stage 1) for NMS-speedup. applied per batch element.
-        self.pre_nms_limit = 3000 if self.dim == 2 else 6000
-#         self.pre_nms_limit = 10000 if self.dim == 2 else 50000 #@rtgunti : Using same limit to compare with RetinaNet
+#         self.pre_nms_limit = 3000 if self.dim == 2 else 6000
+        self.pre_nms_limit = 10000 if self.dim == 2 else 50000 #@rtgunti : Using same limit to compare with RetinaNet
 
         # n_proposals to be selected after NMS per batch element. too high numbers blow up memory if "detect_while_training" is True,
         # since proposals of the entire batch are forwarded through second stage in as one "batch".
@@ -338,8 +339,10 @@ class configs(DefaultConfigs):
         if self.model == 'mrcnn':
             self.num_seg_classes = 2
             self.frcnn_mode = True
-
-        if self.model == 'retina_net' or self.model == 'retina_unet' or self.model == 'prob_detector' or self.model == 'mrcnn':
+        if self.model == 'decoupled_refinement':
+            self.frcnn_mode = True
+            
+        if self.model == 'retina_net' or self.model == 'retina_unet' or self.model == 'prob_detector' or self.model == 'mrcnn' or self.model == 'decoupled_refinement':
             # implement extra anchor-scales according to retina-net publication.
             self.rpn_anchor_scales['xy'] = [[ii[0], ii[0] * (2 ** (1 / 3)), ii[0] * (2 ** (2 / 3))] for ii in
                                             self.rpn_anchor_scales['xy']]

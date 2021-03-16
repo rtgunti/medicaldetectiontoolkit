@@ -57,7 +57,7 @@ class Classifier(nn.Module):
         self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
         self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
         self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride, pad=1, relu=None)
-        print("Retina Net Out channels :", n_output_channels)
+        print("Retina Net Classifier Out channels :", n_output_channels)
 
 
     def forward(self, x):
@@ -257,7 +257,7 @@ def refine_detections(anchors, probs, deltas, batch_ixs, cf):
         bix_scores = pre_nms_scores[bixs]
 
         for i, class_id in enumerate(mutils.unique1d(bix_class_ids)):
-
+            print("i, class_id", i, class_id.cpu().data.numpy())
             ixs = torch.nonzero(bix_class_ids == class_id)[:, 0]
             # nms expects boxes sorted by score.
             ix_rois = bix_rois[ixs]
@@ -278,6 +278,7 @@ def refine_detections(anchors, probs, deltas, batch_ixs, cf):
 
         # only keep top-k boxes of current batch-element.
         top_ids = pre_nms_scores[b_keep].sort(descending=True)[1][:cf.model_max_instances_per_batch_element]
+        print("len(pre_nms_scores[b_keep])", len(pre_nms_scores[b_keep]))
         b_keep = b_keep[top_ids]
         # merge indices over batch elements.
         batch_keep = b_keep if j == 0 else mutils.unique1d(torch.cat((batch_keep, b_keep)))
@@ -539,7 +540,7 @@ class net(nn.Module):
         class_logits = [torch.cat(list(o), dim=1) for o in class_logits][0]
         bb_outputs = list(zip(*bb_reg_layer_outputs))
         bb_outputs = [torch.cat(list(o), dim=1) for o in bb_outputs][0]
-
+#         print("class_logits", (class_logits[0][0].cpu().data.numpy()))
         # merge batch_dimension and store info in batch_ixs for re-allocation.
         batch_ixs = torch.arange(class_logits.shape[0]).unsqueeze(1).repeat(1, class_logits.shape[1]).view(-1).cuda()
         flat_class_softmax = F.softmax(class_logits.view(-1, class_logits.shape[-1]), 1)
