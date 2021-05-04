@@ -103,6 +103,7 @@ def prep_exp(exp_source, exp_dir, server_env, use_stored_settings=True, is_train
         cf = cf_file.configs(server_env)
         tmp_model_path = os.path.join(cf.source_dir, 'models', 'tmp_model.py')
         tmp_backbone_path = os.path.join(cf.source_dir, 'models', 'tmp_backbone.py')
+        print("tmp_model_path", tmp_model_path)
         subprocess.call('cp {} {}'.format(os.path.join(exp_dir, 'model.py'), tmp_model_path), shell=True)
         subprocess.call('cp {} {}'.format(os.path.join(exp_dir, 'backbone.py'), tmp_backbone_path), shell=True)
         cf.model_path = tmp_model_path
@@ -169,7 +170,7 @@ class ModelSelector:
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
             torch.save(state, os.path.join(save_dir, 'params.pth'))
-#             torch.save(net.state_dict(), os.path.join(save_dir, 'params.pth'))
+            # torch.save(net.state_dict(), os.path.join(save_dir, 'params.pth'))
             with open(os.path.join(save_dir, 'monitor_metrics.pickle'), 'wb') as handle:
                 pickle.dump(monitor_metrics, handle)
             # save epoch_ranking to keep info for inference.
@@ -194,14 +195,17 @@ class ModelSelector:
         with open(os.path.join(save_dir, 'monitor_metrics.pickle'), 'wb') as handle:
             pickle.dump(monitor_metrics, handle)
 
-def load_pre_trained_weights(checkpoint_path, net, optimizer, cf):
-    print("Loading Available Pretrained weights from : ", checkpoint_path)
-    checkpoint_params = torch.load(os.path.join(checkpoint_path, 'params.pth'))
+def load_pre_trained_weights(fold_path, net, optimizer, cf):
+    
+    best_checkpoint = str(np.load(os.path.join(fold_path, 'epoch_ranking.npy'))[0]) + '_best_checkpoint'
+    checkpoint_params = torch.load(os.path.join(fold_path, best_checkpoint,'params.pth'))
+    print("Loading Available Pretrained weights from : ", os.path.join(fold_path, best_checkpoint))
     curr_net_dict = net.state_dict()
     curr_opt_dict = optimizer.state_dict()
     curr_keys = set(net.state_dict().keys())
     pre_keys = set(checkpoint_params['state_dict'].keys())
-    if 1:
+    debug = False
+    if debug:
         print("Curr_keys : {} pre_keys : {} ".format(len(curr_keys), len(pre_keys)))
         print("== Intersection ==")
         [print(k) for k in curr_keys.intersection(pre_keys)]

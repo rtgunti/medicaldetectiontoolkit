@@ -93,6 +93,7 @@ class Evaluator():
                         
                         for box in b_boxes_list:
                             if (box['box_type'] == 'det' and box['box_score'] < self.cf.min_det_thresh):
+                                print("skipped a box")
                                 continue
                             if (box['box_type'] == 'gt' and box['box_label'] == cl):
                                 b_tar_boxes.append(box['box_coords'])
@@ -160,7 +161,7 @@ class Evaluator():
                                 df_list_class_preds += [cl] * non_match_gt_ixs.shape[0]
                                 df_list_pids += [pid]  * non_match_gt_ixs.shape[0]
                                 df_list_type += ['det_fn']  * non_match_gt_ixs.shape[0]
-#                                 print("FN in ", pid)
+                                # print("FN in ", pid)
                         # only fp:
                         if not 0 in b_cand_boxes.shape and 0 in b_tar_boxes.shape:
                             df_list_preds += [ii for ii in b_cand_scores]

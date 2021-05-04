@@ -14,10 +14,12 @@
 # limitations under the License.
 # ==============================================================================
 
+
+import numpy as np
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-import numpy as np
+sys.path.append('/home/rgunti/medkit')
 from default_configs import DefaultConfigs
 
 class configs(DefaultConfigs):
@@ -27,17 +29,18 @@ class configs(DefaultConfigs):
         #########################
         #    Preprocessing      #
         #########################
-        
-        self.data =["Thesis", "LiTS"]
-        
-        self.root_dir = '/home/jupyter-rgunti/data/{}'.format(self.data[0])
+
+        self.data = ["Thesis", "LiTS"]
+
+        self.root_dir = '/home/rgunti/data/{}'.format(self.data[0])
         self.raw_data_dir = '{}/data_raw/data/'.format(self.root_dir)
         self.raw_seg_dir = '{}/data_raw/seg/'.format(self.root_dir)
         self.pp_dir = '{}/data_pp'.format(self.root_dir)
         self.pp_dir_wocrop = '{}/data_pp_wocrop'.format(self.root_dir)
         self.pp_dir_int = '{}/data_pp_int'.format(self.root_dir)
+        self.pp_dir_int_wocrop = '{}/data_pp_int_wocrop'.format(self.root_dir)
         self.target_spacing = (1.0, 1.0, 2.5)
-        
+
         if server_env:
             self.root_dir = "/content/drive/My\' \'Drive/Thesis/Thesis/"
             self.raw_data_dir = '{}/Dataset/data/'.format(self.root_dir)
@@ -48,13 +51,12 @@ class configs(DefaultConfigs):
         #         I/O           #
         #########################
 
-
         # one out of [2, 3]. dimension the model operates in.
         self.dim = 3
 
         # one out of ['mrcnn', 'retina_net', 'retina_unet', 'detection_unet', 'ufrcnn', 'decoupled_refinement'].
         self.model = 'retina_net'
-        
+
         DefaultConfigs.__init__(self, self.model, server_env, self.dim)
 
         # int [0 < dataset_size]. select n patients from dataset for prototyping. If None, all data is used.
@@ -65,19 +67,21 @@ class configs(DefaultConfigs):
         self.data_dest = ''
 
         # path to preprocessed data.
-#         self.pp_name = 'data_pp'
-#         self.pp_name = 'data_pp_int'
-        self.pp_name = 'data_pp_wocrop'
-        
+        # self.pp_name = 'data_pp'
+        # self.pp_name = 'data_pp_int'
+        # self.pp_name = 'data_pp_wocrop'
+        self.pp_name = 'data_pp_int_wocrop'
+
         self.input_df_name = 'info_df.pickle'
         self.pp_data_path = '{}/{}/'.format(self.root_dir, self.pp_name)
-        self.pp_test_data_path = self.pp_data_path #change if test_data in separate folder.
+        # change if test_data in separate folder.
+        self.pp_test_data_path = self.pp_data_path
         # settings for deployment in cloud.
         if server_env:
             # path to preprocessed data.
-#             self.pp_name = 'lidc_mdt_npz'
+            # self.pp_name = 'lidc_mdt_npz'
             self.crop_name = 'pp_fg_slices_packed'
-#             self.pp_data_path = '/datasets/datasets_ramien/lidc_exp/data/{}'.format(self.pp_name)
+            # self.pp_data_path = '/datasets/datasets_ramien/lidc_exp/data/{}'.format(self.pp_name)
             self.data_dest = '/content/'
             self.pp_test_data_path = self.pp_data_path
             self.select_prototype_subset = None
@@ -91,21 +95,21 @@ class configs(DefaultConfigs):
 
         # patch_size to be used for training. pre_crop_size is the patch_size before data augmentation.
         self.pre_crop_size_2D = [256, 256]
-        self.patch_size_2D = [224, 224] 
+        self.patch_size_2D = [224, 224]
         self.use_big_patch = 0
-        if(self.use_big_patch):
+        if self.use_big_patch:
             self.pre_crop_size_3D = [256, 256, 112]
-            self.patch_size_3D = [224, 224, 96] 
+            self.patch_size_3D = [224, 224, 96]
         else:
             self.pre_crop_size_3D = [156, 156, 96]
             self.patch_size_3D = [128, 128, 64]
         self.pre_crop_size = self.pre_crop_size_2D if self.dim == 2 else self.pre_crop_size_3D
         self.patch_size = self.patch_size_2D if self.dim == 2 else self.patch_size_3D
-        
+
         # ratio of free sampled batch elements before class balancing is triggered
         # (>0 to include "empty"/background patches.)
         self.batch_sample_slack = 0.2
-#         self.batch_sample_slack = 0.5 if self.dim == 2 else 1.0
+        # self.batch_sample_slack = 0.5 if self.dim == 2 else 1.0
 
         # set 2D network to operate in 3D images.
         self.merge_2D_to_3D_preds = False
@@ -115,20 +119,20 @@ class configs(DefaultConfigs):
         if self.n_3D_context is not None and self.dim == 2:
             self.n_channels *= (self.n_3D_context * 2 + 1)
 
-
         #########################
         #      Architecture      #
         #########################
 
         self.start_filts = 48 if self.dim == 2 else 32
         self.end_filts = self.start_filts * 4 if self.dim == 2 else self.start_filts * 2
-        self.res_architecture = 'resnet50' # 'resnet101' , 'resnet50'
-        self.norm = 'batch_norm' # one of None, 'instance_norm', 'batch_norm'
-        self.weight_decay = 0 ## 
+        self.res_architecture = 'resnet50'  # 'resnet101' , 'resnet50'
+        self.norm = 'batch_norm'  # one of None, 'instance_norm', 'batch_norm'
+        self.weight_decay = 0
 
         # one of 'xavier_uniform', 'xavier_normal', or 'kaiming_normal', None (=default = 'kaiming_uniform')
         self.weight_init = None
-        self.pre_train_path = None   # Path to checkpoint of an experiment. Models loads only the matching keys from net.state_dict
+        # Path to checkpoint of an experiment. Models loads only the matching keys from net.state_dict
+        self.pre_train_path = None
 
         #########################
         #  Schedule / Selection #
@@ -141,9 +145,10 @@ class configs(DefaultConfigs):
         self.do_validation = True if self.select_prototype_subset is None else False
         # decide whether to validate on entire patient volumes (like testing) or sampled patches (like training)
         # the former is morge accurate, while the latter is faster (depending on volume size)
-        self.val_mode = 'val_sampling' # one of 'val_sampling' , 'val_patient'
+        self.val_mode = 'val_sampling'  # one of 'val_sampling' , 'val_patient'
         if self.val_mode == 'val_patient':
-            self.max_val_patients = None  # if 'None' iterates over entire val_set once.
+            # if 'None' iterates over entire val_set once.
+            self.max_val_patients = None
         if self.val_mode == 'val_sampling':
             self.num_val_batches = 10
 
@@ -157,17 +162,21 @@ class configs(DefaultConfigs):
         # set a minimum epoch number for saving in case of instabilities in the first phase of training.
         self.min_save_thresh = 0 if self.dim == 2 else 0
         self.test_aug = False
-        self.report_score_level = ['rois'] # choose list from 'patient', 'rois'
-#         self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
+        # choose list from 'patient', 'rois'
+        self.report_score_level = ['rois']
+        # self.class_dict = {1: 'benign', 2: 'malignant'}  # 0 is background.
         self.class_dict = {1: 'lesion'}  # 0 is background.
-#         self.patient_class_of_interest = 2  # patient metrics are only plotted for one class.
+        # self.patient_class_of_interest = 2  # patient metrics are only plotted for one class.
         self.patient_class_of_interest = 1
-        self.ap_match_ious = [0.1]  # list of ious to be evaluated for ap-scoring.
+        # list of ious to be evaluated for ap-scoring.
+        self.ap_match_ious = [0.1]
 
-#         self.model_selection_criteria = ['malignant_ap', 'benign_ap'] # criteria to average over for saving epochs.
+        # self.model_selection_criteria = ['malignant_ap', 'benign_ap'] # criteria to average over for saving epochs.
         self.model_selection_criteria = ['lesion_ap']
-        self.min_det_thresh = 0.1  # minimum confidence value to select predictions for evaluation.
-        self.scan_det_thresh = False #analysis of the  hyper-parameter cf.min_det_thresh, for optimization on validation set. 
+        # minimum confidence value to select predictions for evaluation.
+        self.min_det_thresh = 0
+        # analysis of the  hyper-parameter cf.min_det_thresh, for optimization on validation set.
+        self.scan_det_thresh = False
 
         # threshold for clustering predictions together (wcs = weighted cluster scoring).
         # needs to be >= the expected overlap of predictions coming from one model (typically NMS threshold).
@@ -181,30 +190,30 @@ class configs(DefaultConfigs):
         #   Data Augmentation   #
         #########################
 
-        self.da_kwargs={
-        'do_elastic_deform': True,
-        'alpha':(0., 1500.),
-        'sigma':(30., 50.),
-        'do_rotation':True,
-        'angle_x': (0., 0. * np.pi),
-        'angle_y': (0., 0),
-        'angle_z': (0., 0),
-        'do_scale': True,
-        'scale':(0.8, 1.2),
-        'random_crop':True,
-        'rand_crop_dist':  (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3),
-        'border_mode_data': 'constant',
-        'border_cval_data': 0,
-        'order_data': 1
+        self.da_kwargs = {
+            'do_elastic_deform': True,
+            'alpha': (0., 1500.),
+            'sigma': (30., 50.),
+            'do_rotation': True,
+            'angle_x': (0., 0. * np.pi),
+            'angle_y': (0., 0),
+            'angle_z': (0., 0),
+            'do_scale': True,
+            'scale': (0.8, 1.2),
+            'random_crop': True,
+            'rand_crop_dist':  (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3),
+            'border_mode_data': 'constant',
+            'border_cval_data': 0,
+            'order_data': 1
         }
 
         if self.dim == 3:
-            self.da_kwargs['rand_crop_dist'] = (self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3, self.patch_size[2] / 2. - 3)
+            self.da_kwargs['rand_crop_dist'] = (
+                self.patch_size[0] / 2. - 3, self.patch_size[1] / 2. - 3, self.patch_size[2] / 2. - 3)
             self.da_kwargs['do_elastic_deform'] = True
             self.da_kwargs['angle_x'] = (0, 0.0)
-            self.da_kwargs['angle_y'] = (0, 0.0) #must be 0!!
+            self.da_kwargs['angle_y'] = (0, 0.0)  # must be 0!!
             self.da_kwargs['angle_z'] = (0., 2 * np.pi)
-
 
         #########################
         #   Add model specifics #
@@ -215,12 +224,11 @@ class configs(DefaultConfigs):
          'ufrcnn': self.add_mrcnn_configs,
          'retina_net': self.add_mrcnn_configs,
          'retina_unet': self.add_mrcnn_configs,
-         'decoupled_refinement' : self.add_mrcnn_configs,
-        }[self.model]()
-
+         'decoupled_refinement': self.add_mrcnn_configs,
+         }[self.model]()
 
     def add_det_unet_configs(self):
-        
+
         # learning rate is a list with one entry per epoch.
         self.learning_rate = [1e-5] * self.num_epochs
 
@@ -250,7 +258,7 @@ class configs(DefaultConfigs):
         # disable the re-sampling of mask proposals to original size for speed-up.
         # since evaluation is detection-driven (box-matching) and not instance segmentation-driven (iou-matching),
         # mask-outputs are optional.
-        self.return_masks_in_val = True
+        self.return_masks_in_val = False
         self.return_masks_in_test = False
 
         # set number of proposal boxes to plot after each epoch.
@@ -263,12 +271,13 @@ class configs(DefaultConfigs):
         self.num_seg_classes = 2  # foreground vs. background
 
         # feature map strides per pyramid level are inferred from architecture.
-        #These values are just to calculate the feature map shaped. Not actually used in code
+        # These values are just to calculate the feature map shaped. Not actually used in code
         self.backbone_strides = {'xy': [4, 8, 16, 32], 'z': [1, 2, 4, 8]}
 
         # anchor scales are chosen according to expected object sizes in data set. Default uses only one anchor scale
         # per pyramid level. (outer list are pyramid levels (corresponding to BACKBONE_STRIDES), inner list are scales per level.)
-        self.rpn_anchor_scales = {'xy': [[8], [16], [32], [64]], 'z': [[2], [4], [8], [16]]}
+        self.rpn_anchor_scales = {
+            'xy': [[8], [16], [32], [64]], 'z': [[2], [4], [8], [16]]}
 
         # choose which pyramid levels to extract features from: P2: 0, P3: 1, P4: 2, P5: 3.
         self.pyramid_levels = [0, 1, 2, 3]
@@ -281,11 +290,11 @@ class configs(DefaultConfigs):
         self.rpn_anchor_stride = 1
 
         # Threshold for first stage (RPN) non-maximum suppression (NMS):  LOWER == HARDER SELECTION
-        self.rpn_nms_threshold = 0.7 if self.dim == 2 else 0.7
+        self.rpn_nms_threshold = 0.7 if self.dim == 2 else 1e-5
 
-        # loss sampling settings. 
-        self.rpn_train_anchors_per_image = 6  #per batch element
-        self.train_rois_per_image = 6 #per batch element
+        # loss sampling settings.
+        self.rpn_train_anchors_per_image = 6  # per batch element
+        self.train_rois_per_image = 6  # per batch element
         self.roi_positive_ratio = 0.5
         self.anchor_matching_iou = 0.7
 
@@ -299,7 +308,8 @@ class configs(DefaultConfigs):
 
         self.rpn_bbox_std_dev = np.array([0.1, 0.1, 0.1, 0.2, 0.2, 0.2])
         self.bbox_std_dev = np.array([0.1, 0.1, 0.1, 0.2, 0.2, 0.2])
-        self.window = np.array([0, 0, self.patch_size[0], self.patch_size[1], 0, self.patch_size_3D[2]])
+        self.window = np.array(
+            [0, 0, self.patch_size[0], self.patch_size[1], 0, self.patch_size_3D[2]])
         self.scale = np.array([self.patch_size[0], self.patch_size[1], self.patch_size[0], self.patch_size[1],
                                self.patch_size_3D[2], self.patch_size_3D[2]])
         if self.dim == 2:
@@ -309,19 +319,21 @@ class configs(DefaultConfigs):
             self.scale = self.scale[:4]
 
         # pre-selection in proposal-layer (stage 1) for NMS-speedup. applied per batch element.
-#         self.pre_nms_limit = 3000 if self.dim == 2 else 6000
-        self.pre_nms_limit = 10000 if self.dim == 2 else 50000 #@rtgunti : Using same limit to compare with RetinaNet
+        self.pre_nms_limit = 3000 if self.dim == 2 else 6000
+        # self.pre_nms_limit = 10000 if self.dim == 2 else 50000 #@rtgunti : Using same limit to compare with RetinaNet
 
         # n_proposals to be selected after NMS per batch element. too high numbers blow up memory if "detect_while_training" is True,
         # since proposals of the entire batch are forwarded through second stage in as one "batch".
-        self.roi_chunk_size = 2500 if self.dim == 2 else 600
+        self.roi_chunk_size = 2500 if self.dim == 2 else 200
         self.post_nms_rois_training = 500 if self.dim == 2 else 75
-        self.post_nms_rois_inference = 500
+        self.post_nms_rois_inference = 5
 
         # Final selection of detections (refine_detections)
-        self.model_max_instances_per_batch_element = 10 if self.dim == 2 else 30  # per batch element and class.
-        self.detection_nms_threshold = 1e-5  # needs to be > 0, otherwise all predictions are one cluster.
-        self.model_min_confidence = 0.1
+        # per batch element and class.
+        self.model_max_instances_per_batch_element = 10 if self.dim == 2 else 5
+        # needs to be > 0, otherwise all predictions are one cluster.
+        self.detection_nms_threshold = 0.9
+        self.model_min_confidence = 0
 
         if self.dim == 2:
             self.backbone_shapes = np.array(
@@ -334,14 +346,14 @@ class configs(DefaultConfigs):
                   int(np.ceil(self.patch_size[1] / stride)),
                   int(np.ceil(self.patch_size[2] / stride_z))]
                  for stride, stride_z in zip(self.backbone_strides['xy'], self.backbone_strides['z']
-                                             )])        
-            
+                                             )])
         if self.model == 'mrcnn':
             self.num_seg_classes = 2
             self.frcnn_mode = True
         if self.model == 'decoupled_refinement':
             self.frcnn_mode = True
-            
+
+		
         if self.model == 'retina_net' or self.model == 'retina_unet' or self.model == 'prob_detector' or self.model == 'mrcnn' or self.model == 'decoupled_refinement':
             # implement extra anchor-scales according to retina-net publication.
             self.rpn_anchor_scales['xy'] = [[ii[0], ii[0] * (2 ** (1 / 3)), ii[0] * (2 ** (2 / 3))] for ii in

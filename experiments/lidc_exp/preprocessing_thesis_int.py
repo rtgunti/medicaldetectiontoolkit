@@ -108,7 +108,7 @@ if __name__ == "__main__":
     data_paths = sorted([path for path in os.listdir(cf.raw_data_dir) if 'int1' in path])
     seg_paths = sorted([path for path in os.listdir(cf.raw_seg_dir) if 'int1' in path])
     paths = [p for p in zip(data_paths, seg_paths)]
-#     paths = paths[:4]
+    # paths = paths[:4]
 
     if not os.path.exists(cf.pp_dir_int):
         os.mkdir(cf.pp_dir_int)

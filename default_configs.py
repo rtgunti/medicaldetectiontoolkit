@@ -18,6 +18,7 @@
 
 import os
 
+
 class DefaultConfigs:
 
     def __init__(self, model, server_env=None, dim=2):
@@ -33,22 +34,22 @@ class DefaultConfigs:
 
         # some default paths.
         self.backbone_path = 'models/backbone.py'
-        self.source_dir = os.path.dirname(os.path.realpath(__file__)) #current dir.
+        # current dir.
+        self.source_dir = os.path.dirname(os.path.realpath(__file__))
         self.input_df_name = 'info_df.pickle'
         self.model_path = 'models/{}.py'.format(self.model)
 
         if server_env:
             self.source_dir = '/home/ramien/mdt-public'
 
-
         #########################
         #      Data Loader      #
         #########################
 
-        #random seed for fold_generator and batch_generator.
+        # random seed for fold_generator and batch_generator.
         self.seed = 0
 
-        #number of threads for multithreaded batch generation.
+        # number of threads for multithreaded batch generation.
         self.n_workers = 8
 
         # if True, segmentation losses learn all categories, else only foreground vs. background.
@@ -76,7 +77,6 @@ class DefaultConfigs:
         # number of folds in cross validation.
         self.n_cv_splits = 5
 
-
         # number of probabilistic samples in validation.
         self.n_probabilistic_samples = None
 
@@ -94,15 +94,15 @@ class DefaultConfigs:
         self.ensemble_folds = False
 
         # color specifications for all box_types in prediction_plot.
-        self.box_color_palette = {'det': 'blue', 
-                                  'gt': 'red', 
-                                  'prop': 'white', 
+        self.box_color_palette = {'det': 'blue',
+                                  'gt': 'red',
+                                  'prop': 'white',
                                   'pos_class': 'yellow',
-                                  'neg_class': 'purple',        
-                                  'pos_anchor': 'green', 
+                                  'neg_class': 'purple',
+                                  'pos_anchor': 'green',
                                   'neg_anchor': 'orange',
-                                      'tp_box': 'pink',
-                                      'fp_box' : 'pink2'}
+                                  'tp_box': 'pink',
+                                  'fp_box': 'pink2'}
 
         # scan over confidence score in evaluation to optimize it on the validation set.
         self.scan_det_thresh = False
@@ -132,16 +132,15 @@ class DefaultConfigs:
         #########################
 
         # if True, mask loss is not applied. used for data sets, where no pixel-wise annotations are provided.
-        self.frcnn_mode = False
+        self.frcnn_mode = True
 
         # if True, unmolds masks in Mask R-CNN to full-res for plotting/monitoring.
         self.return_masks_in_val = False
-        self.return_masks_in_test = False # needed if doing instance segmentation. evaluation not yet implemented.
+        # needed if doing instance segmentation. evaluation not yet implemented.
+        self.return_masks_in_test = False
 
         # add P6 to Feature Pyramid Network.
         self.sixth_pooling = False
 
         # for probabilistic detection
         self.n_latent_dims = 0
-
-

@@ -171,7 +171,7 @@ class Predictor:
                                      for batch_instance in range(len(tmp_ens_list[0]))]
 
             # TODO return for instance segmentation:
-#             results_dict['seg_preds'] = np.mean(results_dict['seg_preds'], 1)[:, None]
+            # results_dict['seg_preds'] = np.mean(results_dict['seg_preds'], 1)[:, None]
             # results_dict['seg_preds'] = np.array([[item for d in tmp_ens_list for item in d['seg_preds'][batch_instance]]
             #                                       for batch_instance in range(len(tmp_ens_list[0]['boxes']))])
 
@@ -195,7 +195,7 @@ class Predictor:
             self.logger.info('applying wcs to test set predictions with iou = {} and n_ens = {}.'.format(
                 self.cf.wcs_iou, self.n_ens))
             pool = Pool(processes=6)
-#             print("applying wcs")
+            # print("applying wcs")
             mp_inputs = [[ii[0], ii[1], self.cf.class_dict, self.cf.wcs_iou, self.n_ens] for ii in list_of_results_per_patient]
             list_of_results_per_patient = pool.map(apply_wbc_to_patient, mp_inputs, chunksize=1)
             pool.close()
@@ -246,7 +246,7 @@ class Predictor:
                     boxes_list.append([ii[0] for ii in fold_list])
             list_of_results_per_patient = [[[[box for fold_list in boxes_list for box in fold_list[pix][0]
                                               if box['box_type'] in ['det', 'gt']]], pid] for pix, pid in enumerate(pids)]
-#                                               if box['box_type'] == 'det']], pid] for pix, pid in enumerate(pids)]
+                                            #   if box['box_type'] == 'det']], pid] for pix, pid in enumerate(pids)]
             da_factor = 4 if self.cf.test_aug else 1
             n_ens = self.cf.test_n_epochs * da_factor * len(self.cf.folds)
 

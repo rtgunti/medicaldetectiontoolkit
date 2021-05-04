@@ -27,6 +27,7 @@ import os
 from copy import deepcopy
 
 def plot_test_prediction(results_list, cf, outfile=None):
+    print("plot fold : ", cf.fold)
     if cf.data_dest:
         pp_data_path = cf.data_dest if cf.data_dest else cf.pp_data_path
     else:
@@ -46,21 +47,25 @@ def plot_test_prediction(results_list, cf, outfile=None):
         patient_ix = p_ind
         p_res = results_list[patient_ix]
         p_id = p_res[1]
-        print("Plotting for ",p_id)
+        print("Plotting for",p_id)
         if p_id not in p_ids:
             continue
-        outfile = os.path.join(cf.plot_dir, 'test_{}.png'.format(p_id))
+        outfile = os.path.join(cf.plot_dir, 'test_fold{}_{}.png'.format(cf.fold, p_id))
         data = np.load(os.path.join(pp_data_path, p_res[1] + '_img.npy'))[None]
         segs = np.load(os.path.join(pp_data_path, p_res[1] + '_rois.npy'))[None]
         
         data = np.transpose(data, axes=(3, 0, 1, 2))  # @rtgunti : (c, x, y, z) to (z, c, x, y)
         segs = np.transpose(segs, axes=(3, 0, 1, 2))
         gt_boxes = [box['box_coords'] for box in p_res[0][0] if box['box_type'] == 'gt']
+
         if len(gt_boxes) > 0:
             z_cuts = [np.max((int(gt_boxes[0][4]) - 5, 0)), np.min((int(gt_boxes[0][5]) + 5, data.shape[0]))]
         else:
             z_cuts = [data.shape[0]//2 - 5, int(data.shape[0]//2 + np.min([10, data.shape[0]//2]))]
-            
+        show_all_slices = True
+        if show_all_slices:
+            z_cuts = [0, data.shape[0]]
+
         p_roi_results = p_res[0][0]
         roi_results = [[] for _ in range(data.shape[0])]
         
@@ -73,13 +78,14 @@ def plot_test_prediction(results_list, cf, outfile=None):
                 roi_results[int(s)].append(box)
                 roi_results[int(s)][-1]['box_coords'] = b[:4]
 
+
         roi_results = roi_results[z_cuts[0]: z_cuts[1]]
         data = data[z_cuts[0]: z_cuts[1]]
         segs = segs[z_cuts[0]: z_cuts[1]]
         seg_preds = np.zeros(segs.shape)
         
-#         p_id = [p_id] * data.shape[0]      
-        p_id = [p_id + '_' +str(z_cut) for z_cut in range(z_cuts[0], z_cuts[1])]
+        # p_id = [p_id] * data.shape[0]      
+        p_id = [p_id + '_' + str(z_cut) for z_cut in range(z_cuts[0], z_cuts[1])]
 
         try:
             # all dimensions except for the 'channel-dimension' are required to match
@@ -90,7 +96,8 @@ def plot_test_prediction(results_list, cf, outfile=None):
                           'Shapes {} vs. {} vs {}'.format(data.shape, segs.shape, seg_preds.shape))
 
 
-        show_arrays = np.concatenate([data, segs, seg_preds, data[:, 0][:, None]], axis=1).astype(float)
+        # show_arrays = np.concatenate([data, segs, seg_preds, data[:, 0][:, None]], axis=1).astype(float)
+        show_arrays = np.concatenate([data, segs, data[:, 0][:, None]], axis=1).astype(float)
         approx_figshape = (5 * show_arrays.shape[0], 5 * show_arrays.shape[1])
         fig = plt.figure(figsize=approx_figshape)
         gs = gridspec.GridSpec(show_arrays.shape[1] + 1, show_arrays.shape[0])
@@ -408,6 +415,7 @@ def plot_prediction_hist(label_list, pred_list, type_list, outfile):
         recall = tp_count / pos_count if pos_count else 1
         f1_score = 2*precision*recall/(precision + recall + 1.e-5)
         title += ' tp:{} fp:{} fn:{} pos:{}\n precision:{:.3f} recall:{:.3f} f1_score:{:.3f}'. format(tp_count, fp_count, fn_count, pos_count, precision, recall, f1_score)
+        title += ' tp:{} fp:{} fn:{} pos:{}\n precision:{:.3f} recall:{:.3f} f1_score:{:.3f}'. format(tp_count, fp_count, fn_count, pos_count)
 
     plt.legend()
     plt.title(title)

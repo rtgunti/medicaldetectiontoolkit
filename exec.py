@@ -128,9 +128,13 @@ def test(logger):
     batch_gen = data_loader.get_test_generator(cf, logger)
     test_results_list = test_predictor.predict_test_set(batch_gen, return_results=True)
     test_results_list = test_predictor.load_saved_predictions(apply_wbc=True)
+    # print(sum([len(res[0][0]) for res in test_results_list])) 
+    # print((test_results_list[0][0][0]))
+    # test_results_list = test_predictor.load_saved_predictions(apply_wbc=False)
+    plot_test_prediction(test_results_list, cf)#@rtgunti
     test_evaluator.evaluate_predictions(test_results_list)
     test_evaluator.score_test_df()
-#     plot_test_prediction(test_results_list, cf)#@rtgunti
+    
 
 
 if __name__ == '__main__':
@@ -223,6 +227,7 @@ if __name__ == '__main__':
             cf.fold_dir = os.path.join(cf.exp_dir, 'fold_{}'.format(fold))
             logger = utils.get_logger(cf.fold_dir)
             cf.fold = fold
+            print("Fold" , cf.fold)
             test(logger)
 
             for hdlr in logger.handlers:
@@ -245,6 +250,7 @@ if __name__ == '__main__':
             if folds is None:
                 folds = range(cf.n_cv_splits)
             for fold in folds:
+                print("="*10, fold)
                 cf.fold_dir = os.path.join(cf.exp_dir, 'fold_{}'.format(fold))
                 cf.fold = fold
                 predictor = Predictor(cf, net=None, logger=logger, mode='analysis')
@@ -252,6 +258,7 @@ if __name__ == '__main__':
                 logger.info('starting evaluation...')
                 evaluator = Evaluator(cf, logger, mode='test')
                 evaluator.evaluate_predictions(results_list)
+                print(len(evaluator.test_df['det_type']))
                 evaluator.score_test_df()
 
     # create experiment folder and copy scripts without starting job.

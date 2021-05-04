@@ -36,114 +36,7 @@ import torch.utils
 ############################################################
 # Networks on top of backbone
 ############################################################
-class RPN_SharedConv(nn.Module):
-    '''
-    Shared Convolutions for RPN
-    '''
-    def __init__(self, cf, conv):
 
-        super(RPN_SharedConv, self).__init__()
-        self.dim = conv.dim
-        n_output_channels = cf.n_anchors_per_pos * cf.head_classes
-        n_features = cf.n_rpn_features
-        anchor_stride = cf.rpn_anchor_stride
-        self.conv_shared = conv(cf.end_filts, cf.n_rpn_features, ks=3, stride=cf.rpn_anchor_stride, pad=1, relu=cf.relu)
-
-    def forward(self, x):
-        """
-        :param x: input feature maps (b, in_channels, y, x, (z))
-        :return: rpn_class_logits (b, 2, n_anchors)
-        :return: rpn_probs_logits (b, 2, n_anchors)
-        :return: rpn_bbox (b, 2 * dim, n_anchors)
-        """
-        x = self.conv_shared(x)
-        return [x]
-        
-class RPN_Classifier(nn.Module):
-    '''
-    Classifier head for RPN
-    '''
-    def __init__(self, cf, conv):
-        """
-        Builds the classifier sub-network.
-        """
-        super(RPN_Classifier, self).__init__()
-        self.dim = conv.dim
-        self.n_classes = cf.head_classes
-        n_input_channels = cf.end_filts
-        n_features = cf.n_rpn_features
-        n_output_channels = cf.n_anchors_per_pos * cf.head_classes
-        anchor_stride = cf.rpn_anchor_stride
-
-        self.conv_1 = conv(n_input_channels, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_2 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride, pad=1, relu=None)
-
-    def forward(self, x):
-        """
-        :param x: input feature map (b, in_c, y, x, (z))
-        :return: class_logits (b, n_anchors, n_classes)
-        """
-        x = self.conv_1(x)
-        x = self.conv_2(x)
-        x = self.conv_3(x)
-        x = self.conv_4(x)
-        class_logits = self.conv_final(x)
-
-        axes = (0, 2, 3, 1) if self.dim == 2 else (0, 2, 3, 4, 1)
-        class_logits = class_logits.permute(*axes)
-        class_logits = class_logits.contiguous()
-        class_logits = class_logits.view(x.size()[0], -1, self.n_classes)
-        
-        # Softmax on last dimension (fg vs. bg).
-        class_probs = F.softmax(class_logits, dim=2)
-
-        return [class_logits, class_probs]
-
-
-class RPN_BBRegressor(nn.Module):
-    '''
-    Regressor head for RPN
-    '''
-    def __init__(self, cf, conv):
-        """
-        Builds the bb-regression sub-network.
-        """
-        super(RPN_BBRegressor, self).__init__()
-        self.dim = conv.dim
-        n_input_channels = cf.end_filts
-        n_features = cf.n_rpn_features
-        n_output_channels = cf.n_anchors_per_pos * self.dim * 2
-        anchor_stride = cf.rpn_anchor_stride
-
-        self.conv_1 = conv(n_input_channels, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_2 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_3 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_4 = conv(n_features, n_features, ks=3, stride=anchor_stride, pad=1, relu=cf.relu)
-        self.conv_final = conv(n_features, n_output_channels, ks=3, stride=anchor_stride,
-                               pad=1, relu=None)
-
-    def forward(self, x):
-        """
-        :param x: input feature map (b, in_c, y, x, (z))
-        :return: bb_logits (b, n_anchors, dim * 2)
-        """
-        x = self.conv_1(x)
-        x = self.conv_2(x)
-        x = self.conv_3(x)
-        x = self.conv_4(x)
-        bb_logits = self.conv_final(x)
-
-        axes = (0, 2, 3, 1) if self.dim == 2 else (0, 2, 3, 4, 1)
-        bb_logits = bb_logits.permute(*axes)
-        bb_logits = bb_logits.contiguous()
-        bb_logits = bb_logits.view(x.size()[0], -1, self.dim * 2)
-
-        return [bb_logits]
-    
-    
 class RPN(nn.Module):
     """
     Region Proposal Network.
@@ -153,9 +46,13 @@ class RPN(nn.Module):
 
         super(RPN, self).__init__()
         self.dim = conv.dim
-        self.conv_shared = conv(cf.end_filts, cf.n_rpn_features, ks=3, stride=cf.rpn_anchor_stride, pad=1, relu=cf.relu)      
-        self.conv_class = conv(cf.n_rpn_features, 2 * len(cf.rpn_anchor_ratios), ks=1, stride=1, relu=None)
-        self.conv_bbox = conv(cf.n_rpn_features, 2 * self.dim * len(cf.rpn_anchor_ratios), ks=1, stride=1, relu=None)
+
+        self.conv_shared = conv(cf.end_filts, cf.n_rpn_features,
+                                ks=3, stride=cf.rpn_anchor_stride, pad=1, relu=cf.relu)
+        self.conv_class = conv(
+            cf.n_rpn_features, 2 * len(cf.rpn_anchor_ratios), ks=1, stride=1, relu=None)
+        self.conv_bbox = conv(cf.n_rpn_features, 2 * self.dim *
+                              len(cf.rpn_anchor_ratios), ks=1, stride=1, relu=None)
 
     def forward(self, x):
         """
@@ -167,7 +64,7 @@ class RPN(nn.Module):
 
         # Shared convolutional base of the RPN.
         x = self.conv_shared(x)
-        
+
         # Anchor Score. (batch, anchors per location * 2, y, x, (z)).
         rpn_class_logits = self.conv_class(x)
         # Reshape to (batch, 2, anchors)
@@ -190,12 +87,12 @@ class RPN(nn.Module):
         return [rpn_class_logits, rpn_probs, rpn_bbox]
 
 
-
 class Classifier(nn.Module):
     """
     Head network for classification and bounding box refinement. Performs RoiAlign, processes resulting features through a
     shared convolutional base and finally branches off the classifier- and regression head.
     """
+
     def __init__(self, cf, conv):
         super(Classifier, self).__init__()
 
@@ -206,10 +103,13 @@ class Classifier(nn.Module):
         # instance_norm does not work with spatial dims (1, 1, (1))
         norm = cf.norm if cf.norm != 'instance_norm' else None
 
-        self.conv1 = conv(cf.end_filts, cf.end_filts * 4, ks=self.pool_size, stride=1, norm=norm, relu=cf.relu)
-        self.conv2 = conv(cf.end_filts * 4, cf.end_filts * 4, ks=1, stride=1, norm=norm, relu=cf.relu)
+        self.conv1 = conv(cf.end_filts, cf.end_filts * 4,
+                          ks=self.pool_size, stride=1, norm=norm, relu=cf.relu)
+        self.conv2 = conv(cf.end_filts * 4, cf.end_filts * 4,
+                          ks=1, stride=1, norm=norm, relu=cf.relu)
         self.linear_class = nn.Linear(cf.end_filts * 4, cf.head_classes)
-        self.linear_bbox = nn.Linear(cf.end_filts * 4, cf.head_classes * 2 * self.dim)
+        self.linear_bbox = nn.Linear(
+            cf.end_filts * 4, cf.head_classes * 2 * self.dim)
 
     def forward(self, x, rois):
         """
@@ -220,8 +120,8 @@ class Classifier(nn.Module):
         :return: mrcnn_class_logits (n_proposals, n_head_classes)
         :return: mrcnn_bbox (n_proposals, n_head_classes, 2 * dim) predicted corrections to be applied to proposals for refinement.
         """
-        x = pyramid_roi_align(x, rois, self.pool_size, self.pyramid_levels, self.dim)
-        print(x.shape)
+        x = pyramid_roi_align(x, rois, self.pool_size,
+                              self.pyramid_levels, self.dim)
         x = self.conv1(x)
         x = self.conv2(x)
         x = x.view(-1, self.in_channels * 4)
@@ -232,28 +132,36 @@ class Classifier(nn.Module):
         return [mrcnn_class_logits, mrcnn_bbox]
 
 
-
 class Mask(nn.Module):
     """
     Head network for proposal-based mask segmentation. Performs RoiAlign, some convolutions and applies sigmoid on the
     output logits to allow for overlapping classes.
     """
+
     def __init__(self, cf, conv):
         super(Mask, self).__init__()
         self.pool_size = cf.mask_pool_size
         self.pyramid_levels = cf.pyramid_levels
         self.dim = conv.dim
-        self.conv1 = conv(cf.end_filts, cf.end_filts, ks=3, stride=1, pad=1, norm=cf.norm, relu=cf.relu)
-        self.conv2 = conv(cf.end_filts, cf.end_filts, ks=3, stride=1, pad=1, norm=cf.norm, relu=cf.relu)
-        self.conv3 = conv(cf.end_filts, cf.end_filts, ks=3, stride=1, pad=1, norm=cf.norm, relu=cf.relu)
-        self.conv4 = conv(cf.end_filts, cf.end_filts, ks=3, stride=1, pad=1, norm=cf.norm, relu=cf.relu)
+        self.conv1 = conv(cf.end_filts, cf.end_filts, ks=3,
+                          stride=1, pad=1, norm=cf.norm, relu=cf.relu)
+        self.conv2 = conv(cf.end_filts, cf.end_filts, ks=3,
+                          stride=1, pad=1, norm=cf.norm, relu=cf.relu)
+        self.conv3 = conv(cf.end_filts, cf.end_filts, ks=3,
+                          stride=1, pad=1, norm=cf.norm, relu=cf.relu)
+        self.conv4 = conv(cf.end_filts, cf.end_filts, ks=3,
+                          stride=1, pad=1, norm=cf.norm, relu=cf.relu)
         if conv.dim == 2:
-            self.deconv = nn.ConvTranspose2d(cf.end_filts, cf.end_filts, kernel_size=2, stride=2)
+            self.deconv = nn.ConvTranspose2d(
+                cf.end_filts, cf.end_filts, kernel_size=2, stride=2)
         else:
-            self.deconv = nn.ConvTranspose3d(cf.end_filts, cf.end_filts, kernel_size=2, stride=2)
+            self.deconv = nn.ConvTranspose3d(
+                cf.end_filts, cf.end_filts, kernel_size=2, stride=2)
 
-        self.relu = nn.ReLU(inplace=True) if cf.relu == 'relu' else nn.LeakyReLU(inplace=True)
-        self.conv5 = conv(cf.end_filts, cf.head_classes, ks=1, stride=1, relu=None)
+        self.relu = nn.ReLU(
+            inplace=True) if cf.relu == 'relu' else nn.LeakyReLU(inplace=True)
+        self.conv5 = conv(cf.end_filts, cf.head_classes,
+                          ks=1, stride=1, relu=None)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x, rois):
@@ -264,7 +172,8 @@ class Mask(nn.Module):
         have been merged to one vector, while the origin info has been stored for re-allocation.
         :return: x: masks (n_sampled_proposals (n_detections in inference), n_classes, y, x, (z))
         """
-        x = pyramid_roi_align(x, rois, self.pool_size, self.pyramid_levels, self.dim)
+        x = pyramid_roi_align(x, rois, self.pool_size,
+                              self.pyramid_levels, self.dim)
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -297,7 +206,8 @@ def compute_rpn_class_loss(rpn_match, rpn_class_logits, shem_poolsize):
     if 0 not in pos_indices.size():
         pos_indices = pos_indices.squeeze(1)
         roi_logits_pos = rpn_class_logits[pos_indices]
-        pos_loss = F.cross_entropy(roi_logits_pos, torch.LongTensor([1] * pos_indices.shape[0]).cuda())
+        pos_loss = F.cross_entropy(roi_logits_pos, torch.LongTensor([
+                                   1] * pos_indices.shape[0]).cuda())
     else:
         pos_loss = torch.FloatTensor([0]).cuda()
 
@@ -309,7 +219,8 @@ def compute_rpn_class_loss(rpn_match, rpn_class_logits, shem_poolsize):
         negative_count = np.max((1, pos_indices.cpu().data.numpy().size))
         roi_probs_neg = F.softmax(roi_logits_neg, dim=1)
         neg_ix = mutils.shem(roi_probs_neg, negative_count, shem_poolsize)
-        neg_loss = F.cross_entropy(roi_logits_neg[neg_ix], torch.LongTensor([0] * neg_ix.shape[0]).cuda())
+        neg_loss = F.cross_entropy(
+            roi_logits_neg[neg_ix], torch.LongTensor([0] * neg_ix.shape[0]).cuda())
         np_neg_ix = neg_ix.cpu().data.numpy()
     else:
         neg_loss = torch.FloatTensor([0]).cuda()
@@ -367,7 +278,8 @@ def compute_mrcnn_bbox_loss(mrcnn_target_deltas, mrcnn_pred_deltas, target_class
         positive_roi_ix = torch.nonzero(target_class_ids > 0)[:, 0]
         positive_roi_class_ids = target_class_ids[positive_roi_ix].long()
         target_bbox = mrcnn_target_deltas[positive_roi_ix, :].detach()
-        pred_bbox = mrcnn_pred_deltas[positive_roi_ix, positive_roi_class_ids, :]
+        pred_bbox = mrcnn_pred_deltas[positive_roi_ix,
+                                      positive_roi_class_ids, :]
         loss = F.smooth_l1_loss(pred_bbox, target_bbox)
     else:
         loss = torch.FloatTensor([0]).cuda()
@@ -442,17 +354,18 @@ def proposal_layer(rpn_pred_probs, rpn_pred_deltas, proposal_count, anchors, cf)
         if batch_deltas.shape[-1] == 4:
             boxes = mutils.apply_box_deltas_2D(anchors, deltas)
             boxes = mutils.clip_boxes_2D(boxes, cf.window)
-            keep = nms_2D(torch.cat((boxes, scores.unsqueeze(1)), 1), cf.rpn_nms_threshold)
+            keep = nms_2D(torch.cat((boxes, scores.unsqueeze(1)),
+                          1), cf.rpn_nms_threshold)
             norm = torch.from_numpy(cf.scale).float().cuda()
 
         else:
             boxes = mutils.apply_box_deltas_3D(anchors, deltas)
             boxes = mutils.clip_boxes_3D(boxes, cf.window)
-            keep = nms_3D(torch.cat((boxes, scores.unsqueeze(1)), 1), cf.rpn_nms_threshold)
+            keep = nms_3D(torch.cat((boxes, scores.unsqueeze(1)),
+                          1), cf.rpn_nms_threshold)
             norm = torch.from_numpy(cf.scale).float().cuda()
-        print('batch_ix {} total proposals {}'.format(ix, len(keep)))
+
         keep = keep[:proposal_count]
-        print('batch_ix {} keeping proposals {}'.format(ix, len(keep)))
         boxes = boxes[keep, :]
         rpn_scores = scores[keep][:, None]
 
@@ -465,7 +378,8 @@ def proposal_layer(rpn_pred_probs, rpn_pred_deltas, proposal_count, anchors, cf)
             rpn_scores = torch.cat([rpn_scores, zeros], dim=0)
 
         # concat box and score info for monitoring/plotting.
-        batch_out_proposals.append(torch.cat((boxes, rpn_scores), 1).cpu().data.numpy())
+        batch_out_proposals.append(
+            torch.cat((boxes, rpn_scores), 1).cpu().data.numpy())
         # normalize dimensions to range of 0 to 1.
         normalized_boxes = boxes / norm
         # add back batch dimension
@@ -474,7 +388,6 @@ def proposal_layer(rpn_pred_probs, rpn_pred_deltas, proposal_count, anchors, cf)
     batch_normalized_boxes = torch.cat(batch_normalized_boxes)
     batch_out_proposals = np.array(batch_out_proposals)
     return batch_normalized_boxes, batch_out_proposals
-
 
 
 def pyramid_roi_align(feature_maps, rois, pool_size, pyramid_levels, dim):
@@ -507,7 +420,8 @@ def pyramid_roi_align(feature_maps, rois, pool_size, pyramid_levels, dim):
     # Equation 1 in https://arxiv.org/abs/1612.03144. Account for
     # the fact that our coordinates are normalized here.
     # divide sqrt(h*w) by 1 instead image_area.
-    roi_level = (4 + mutils.log2(torch.sqrt(h*w))).round().int().clamp(pyramid_levels[0], pyramid_levels[-1])
+    roi_level = (4 + mutils.log2(torch.sqrt(h*w))
+                 ).round().int().clamp(pyramid_levels[0], pyramid_levels[-1])
     # if Pyramid contains additional level P6, adapt the roi_level assignemnt accordingly.
     if len(pyramid_levels) == 5:
         roi_level[h*w > 0.65] = 5
@@ -543,12 +457,13 @@ def pyramid_roi_align(feature_maps, rois, pool_size, pyramid_levels, dim):
         # https://hackernoon.com/how-tensorflows-tf-image-resize-stole-60-days-of-my-life-aba5eb093f35
 
         if len(pool_size) == 2:
-            pooled_features = ra2D(pool_size[0], pool_size[1], 0)(feature_maps[level_ix], level_boxes, ind)
+            pooled_features = ra2D(pool_size[0], pool_size[1], 0)(
+                feature_maps[level_ix], level_boxes, ind)
         else:
-            pooled_features = ra3D(pool_size[0], pool_size[1], pool_size[2], 0)(feature_maps[level_ix], level_boxes, ind)
+            pooled_features = ra3D(pool_size[0], pool_size[1], pool_size[2], 0)(
+                feature_maps[level_ix], level_boxes, ind)
 
         pooled.append(pooled_features)
-
 
     # Pack pooled features into one tensor
     pooled = torch.cat(pooled, dim=0)
@@ -562,7 +477,6 @@ def pyramid_roi_align(feature_maps, rois, pool_size, pyramid_levels, dim):
     pooled = pooled[box_to_level, :, :]
 
     return pooled
-
 
 
 def detection_target_layer(batch_proposals, batch_mrcnn_class_scores, batch_gt_class_ids, batch_gt_boxes, batch_gt_masks, cf):
@@ -592,7 +506,6 @@ def detection_target_layer(batch_proposals, batch_mrcnn_class_scores, batch_gt_c
         h, w, z = cf.patch_size
         scale = torch.from_numpy(np.array([h, w, h, w, z, z])).float().cuda()
 
-
     positive_count = 0
     negative_count = 0
     sample_positive_indices = []
@@ -606,14 +519,17 @@ def detection_target_layer(batch_proposals, batch_mrcnn_class_scores, batch_gt_c
 
         gt_class_ids = torch.from_numpy(batch_gt_class_ids[b]).int().cuda()
         gt_masks = torch.from_numpy(batch_gt_masks[b]).float().cuda()
-        if np.any(batch_gt_class_ids[b] > 0):  # skip roi selection for no gt images.
-            gt_boxes = torch.from_numpy(batch_gt_boxes[b]).float().cuda() / scale
+        # skip roi selection for no gt images.
+        if np.any(batch_gt_class_ids[b] > 0):
+            gt_boxes = torch.from_numpy(
+                batch_gt_boxes[b]).float().cuda() / scale
         else:
             gt_boxes = torch.FloatTensor().cuda()
 
         # get proposals and indices of current batch element.
         proposals = batch_proposals[batch_proposals[:, -1] == b][:, :-1]
-        batch_element_indices = torch.nonzero(batch_proposals[:, -1] == b).squeeze(1)
+        batch_element_indices = torch.nonzero(
+            batch_proposals[:, -1] == b).squeeze(1)
 
         # Compute overlaps matrix [proposals, gt_boxes]
         if 0 not in gt_boxes.size():
@@ -630,12 +546,14 @@ def detection_target_layer(batch_proposals, batch_mrcnn_class_scores, batch_gt_c
             negative_roi_bool = roi_iou_max < (0.1 if cf.dim == 2 else 0.01)
         else:
             positive_roi_bool = torch.FloatTensor().cuda()
-            negative_roi_bool = torch.from_numpy(np.array([1]*proposals.shape[0])).cuda()
+            negative_roi_bool = torch.from_numpy(
+                np.array([1]*proposals.shape[0])).cuda()
 
         # Sample Positive ROIs
         if 0 not in torch.nonzero(positive_roi_bool).size():
             positive_indices = torch.nonzero(positive_roi_bool).squeeze(1)
-            positive_samples = int(cf.train_rois_per_image * cf.roi_positive_ratio)
+            positive_samples = int(
+                cf.train_rois_per_image * cf.roi_positive_ratio)
             rand_idx = torch.randperm(positive_indices.size()[0])
             rand_idx = rand_idx[:positive_samples].cuda()
             positive_indices = positive_indices[rand_idx]
@@ -660,16 +578,19 @@ def detection_target_layer(batch_proposals, batch_mrcnn_class_scores, batch_gt_c
             box_ids = torch.arange(roi_masks.size()[0]).int().cuda()
 
             if len(cf.mask_shape) == 2:
-                masks = ra2D(cf.mask_shape[0], cf.mask_shape[1], 0)(roi_masks.unsqueeze(1), boxes, box_ids)
+                masks = ra2D(cf.mask_shape[0], cf.mask_shape[1], 0)(
+                    roi_masks.unsqueeze(1), boxes, box_ids)
             else:
-                masks = ra3D(cf.mask_shape[0], cf.mask_shape[1], cf.mask_shape[2], 0)(roi_masks.unsqueeze(1), boxes, box_ids)
+                masks = ra3D(cf.mask_shape[0], cf.mask_shape[1], cf.mask_shape[2], 0)(
+                    roi_masks.unsqueeze(1), boxes, box_ids)
 
             masks = masks.squeeze(1)
             # Threshold mask pixels at 0.5 to have GT masks be 0 or 1 to use with
             # binary cross entropy loss.
             masks = torch.round(masks)
 
-            sample_positive_indices.append(batch_element_indices[positive_indices])
+            sample_positive_indices.append(
+                batch_element_indices[positive_indices])
             sample_deltas.append(deltas)
             sample_masks.append(masks)
             sample_class_ids.append(roi_gt_class_ids)
@@ -681,10 +602,13 @@ def detection_target_layer(batch_proposals, batch_mrcnn_class_scores, batch_gt_c
         if 0 not in torch.nonzero(negative_roi_bool).size():
             negative_indices = torch.nonzero(negative_roi_bool).squeeze(1)
             r = 1.0 / cf.roi_positive_ratio
-            b_neg_count = np.max((int(r * positive_samples - positive_samples), 1))
+            b_neg_count = np.max(
+                (int(r * positive_samples - positive_samples), 1))
             roi_probs_neg = batch_mrcnn_class_scores[batch_element_indices[negative_indices]]
-            raw_sampled_indices = mutils.shem(roi_probs_neg, b_neg_count, cf.shem_poolsize)
-            sample_negative_indices.append(batch_element_indices[negative_indices[raw_sampled_indices]])
+            raw_sampled_indices = mutils.shem(
+                roi_probs_neg, b_neg_count, cf.shem_poolsize)
+            sample_negative_indices.append(
+                batch_element_indices[negative_indices[raw_sampled_indices]])
             negative_count += raw_sampled_indices.size()[0]
 
     if len(sample_positive_indices) > 0:
@@ -694,7 +618,8 @@ def detection_target_layer(batch_proposals, batch_mrcnn_class_scores, batch_gt_c
 
     # Pad target information with zeros for negative ROIs.
     if positive_count > 0 and negative_count > 0:
-        sample_indices = torch.cat((torch.cat(sample_positive_indices), torch.cat(sample_negative_indices)), dim=0)
+        sample_indices = torch.cat(
+            (torch.cat(sample_positive_indices), torch.cat(sample_negative_indices)), dim=0)
         zeros = torch.zeros(negative_count).int().cuda()
         target_class_ids = torch.cat([target_class_ids, zeros], dim=0)
         zeros = torch.zeros(negative_count, cf.dim * 2).cuda()
@@ -754,7 +679,8 @@ def refine_detections(rois, probs, deltas, batch_ixs, cf):
     batch_ixs = batch_ixs[idx]
 
     # apply bounding box deltas. re-scale to image coordinates.
-    std_dev = torch.from_numpy(np.reshape(cf.rpn_bbox_std_dev, [1, cf.dim * 2])).float().cuda()
+    std_dev = torch.from_numpy(np.reshape(
+        cf.rpn_bbox_std_dev, [1, cf.dim * 2])).float().cuda()
     scale = torch.from_numpy(cf.scale).float().cuda()
     refined_rois = mutils.apply_box_deltas_2D(rois, deltas_specific * std_dev) * scale if cf.dim == 2 else \
         mutils.apply_box_deltas_3D(rois, deltas_specific * std_dev) * scale
@@ -791,21 +717,26 @@ def refine_detections(rois, probs, deltas, batch_ixs, cf):
                 ix_rois = ix_rois[order, :]
 
                 if cf.dim == 2:
-                    class_keep = nms_2D(torch.cat((ix_rois, ix_scores.unsqueeze(1)), dim=1), cf.detection_nms_threshold)
+                    class_keep = nms_2D(torch.cat(
+                        (ix_rois, ix_scores.unsqueeze(1)), dim=1), cf.detection_nms_threshold)
                 else:
-                    class_keep = nms_3D(torch.cat((ix_rois, ix_scores.unsqueeze(1)), dim=1), cf.detection_nms_threshold)
+                    class_keep = nms_3D(torch.cat(
+                        (ix_rois, ix_scores.unsqueeze(1)), dim=1), cf.detection_nms_threshold)
 
                 # map indices back.
                 class_keep = keep[score_keep[bixs[ixs[order[class_keep]]]]]
                 # merge indices over classes for current batch element
-                b_keep = class_keep if i == 0 else mutils.unique1d(torch.cat((b_keep, class_keep)))
+                b_keep = class_keep if i == 0 else mutils.unique1d(
+                    torch.cat((b_keep, class_keep)))
 
             # only keep top-k boxes of current batch-element
-            top_ids = class_scores[b_keep].sort(descending=True)[1][:cf.model_max_instances_per_batch_element]
+            top_ids = class_scores[b_keep].sort(descending=True)[
+                1][:cf.model_max_instances_per_batch_element]
             b_keep = b_keep[top_ids]
 
             # merge indices over batch elements.
-            batch_keep = b_keep if j == 0 else mutils.unique1d(torch.cat((batch_keep, b_keep)))
+            batch_keep = b_keep if j == 0 else mutils.unique1d(
+                torch.cat((batch_keep, b_keep)))
 
         keep = batch_keep
 
@@ -838,14 +769,17 @@ def get_results(cf, img_shape, detections, detection_masks, box_results_list=Non
     """
     detections = detections.cpu().data.numpy()
     if cf.dim == 2:
-        detection_masks = detection_masks.permute(0, 2, 3, 1).cpu().data.numpy()
+        detection_masks = detection_masks.permute(
+            0, 2, 3, 1).cpu().data.numpy()
     else:
-        detection_masks = detection_masks.permute(0, 2, 3, 4, 1).cpu().data.numpy()
+        detection_masks = detection_masks.permute(
+            0, 2, 3, 4, 1).cpu().data.numpy()
 
     # restore batch dimension of merged detections using the batch_ix info.
     batch_ixs = detections[:, cf.dim*2]
     detections = [detections[batch_ixs == ix] for ix in range(img_shape[0])]
-    mrcnn_mask = [detection_masks[batch_ixs == ix] for ix in range(img_shape[0])]
+    mrcnn_mask = [detection_masks[batch_ixs == ix]
+                  for ix in range(img_shape[0])]
 
     # for test_forward, where no previous list exists.
     if box_results_list is None:
@@ -864,7 +798,8 @@ def get_results(cf, img_shape, detections, detection_masks, box_results_list=Non
             # Filter out detections with zero area. Often only happens in early
             # stages of training when the network weights are still a bit random.
             if cf.dim == 2:
-                exclude_ix = np.where((boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1]) <= 0)[0]
+                exclude_ix = np.where(
+                    (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1]) <= 0)[0]
             else:
                 exclude_ix = np.where(
                     (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 5] - boxes[:, 4]) <= 0)[0]
@@ -882,7 +817,7 @@ def get_results(cf, img_shape, detections, detection_masks, box_results_list=Non
                 for i in range(masks.shape[0]):
                     # Convert neural network mask to full size mask.
                     full_masks.append(mutils.unmold_mask_2D(masks[i], boxes[i], permuted_image_shape)
-                    if cf.dim == 2 else mutils.unmold_mask_3D(masks[i], boxes[i], permuted_image_shape))
+                                      if cf.dim == 2 else mutils.unmold_mask_3D(masks[i], boxes[i], permuted_image_shape))
             # if masks are returned, take max over binary full masks of all predictions in this image.
             # right now only binary masks for plotting/monitoring. for instance segmentation return all proposal maks.
             final_masks = np.max(np.array(full_masks), 0) if len(full_masks) > 0 else np.zeros(
@@ -912,7 +847,6 @@ def get_results(cf, img_shape, detections, detection_masks, box_results_list=Non
 
 class net(nn.Module):
 
-
     def __init__(self, cf, logger):
 
         super(net, self).__init__()
@@ -921,11 +855,11 @@ class net(nn.Module):
         self.build()
 
         if self.cf.weight_init is not None:
-            logger.info("using pytorch weight init of type {}".format(self.cf.weight_init))
+            logger.info("using pytorch weight init of type {}".format(
+                self.cf.weight_init))
             mutils.initialize_weights(self)
         else:
             logger.info("using default pytorch weight init")
-
 
     def build(self):
         """Build Mask R-CNN architecture."""
@@ -946,19 +880,13 @@ class net(nn.Module):
         conv = mutils.NDConvGenerator(self.cf.dim)
         backbone = utils.import_module('bbone', self.cf.backbone_path)
 
-        # build Anchors, FPN, RPN, Classifier / Bbox-Regressor-head, Mask-head
+        # build Anchors, FPN, RPN, Classifier / Bbox-Regressor -head, Mask-head
         self.np_anchors = mutils.generate_pyramid_anchors(self.logger, self.cf)
         self.anchors = torch.from_numpy(self.np_anchors).float().cuda()
-        self.Fpn = backbone.FPN(self.cf, conv)
-#         self.Rpn = RPN(self.cf, conv)
-        
-        self.Rpn_Classifier = RPN_Classifier(self.cf, conv)
-#         self.Rpn_SharedConv = RPN_SharedConv(self.cf, conv)
-        self.Rpn_BBRegressor = RPN_BBRegressor(self.cf, conv)
-        
-        self.Classifier = Classifier(self.cf, conv)
-        self.Mask = Mask(self.cf, conv)
-
+        self.fpn = backbone.FPN(self.cf, conv)
+        self.rpn = RPN(self.cf, conv)
+        self.classifier = Classifier(self.cf, conv)
+        self.mask = Mask(self.cf, conv)
 
     def train_forward(self, batch, is_validation=False):
         """
@@ -975,8 +903,8 @@ class net(nn.Module):
         gt_class_ids = batch['roi_labels']
         gt_boxes = batch['bb_target']
         axes = (0, 2, 3, 1) if self.cf.dim == 2 else (0, 2, 3, 4, 1)
-        gt_masks = [np.transpose(batch['roi_masks'][ii], axes=axes) for ii in range(len(batch['roi_masks']))]
-
+        gt_masks = [np.transpose(batch['roi_masks'][ii], axes=axes)
+                    for ii in range(len(batch['roi_masks']))]
 
         img = torch.from_numpy(img).float().cuda()
         batch_rpn_class_loss = torch.FloatTensor([0]).cuda()
@@ -985,13 +913,13 @@ class net(nn.Module):
         # list of output boxes for monitoring/plotting. each element is a list of boxes per batch element.
         box_results_list = [[] for _ in range(img.shape[0])]
 
-        #forward passes. 
-        #1. general forward pass, where no activations are saved in second stage (for performance monitoring and loss sampling). 
-        #2. second stage forward pass of sampled rois with stored activations for backprop.
-        with torch.no_grad():
-            rpn_class_logits, rpn_pred_deltas, proposal_boxes, detections, detection_masks = self.forward(img)
+        # forward passes. 1. general forward pass, where no activations are saved in second stage (for performance
+        # monitoring and loss sampling). 2. second stage forward pass of sampled rois with stored activations for backprop.
+        rpn_class_logits, rpn_pred_deltas, proposal_boxes, detections, detection_masks = self.forward(
+            img)
         mrcnn_class_logits, mrcnn_pred_deltas, mrcnn_pred_mask, target_class_ids, mrcnn_target_deltas, target_mask,  \
-        sample_proposals = self.loss_samples_forward(gt_class_ids, gt_boxes, gt_masks)
+            sample_proposals = self.loss_samples_forward(
+                gt_class_ids, gt_boxes, gt_masks)
 
         # loop over batch
         for b in range(img.shape[0]):
@@ -1003,62 +931,77 @@ class net(nn.Module):
                                                 'box_label': batch['roi_labels'][b][ix], 'box_type': 'gt'})
 
                 # match gt boxes with anchors to generate targets for RPN losses.
-                rpn_match, rpn_target_deltas = mutils.gt_anchor_matching(self.cf, self.np_anchors, gt_boxes[b])
+                rpn_match, rpn_target_deltas = mutils.gt_anchor_matching(
+                    self.cf, self.np_anchors, gt_boxes[b])
 
                 # add positive anchors used for loss to output list for monitoring.
-                pos_anchors = mutils.clip_boxes_numpy(self.np_anchors[np.argwhere(rpn_match == 1)][:, 0], img.shape[2:])
+                pos_anchors = mutils.clip_boxes_numpy(
+                    self.np_anchors[np.argwhere(rpn_match == 1)][:, 0], img.shape[2:])
                 for p in pos_anchors:
-                    box_results_list[b].append({'box_coords': p, 'box_type': 'pos_anchor'})
+                    box_results_list[b].append(
+                        {'box_coords': p, 'box_type': 'pos_anchor'})
 
             else:
                 rpn_match = np.array([-1]*self.np_anchors.shape[0])
                 rpn_target_deltas = np.array([0])
 
             rpn_match = torch.from_numpy(rpn_match).cuda()
-            rpn_target_deltas = torch.from_numpy(rpn_target_deltas).float().cuda()
+            rpn_target_deltas = torch.from_numpy(
+                rpn_target_deltas).float().cuda()
 
             # compute RPN losses.
-            rpn_class_loss, neg_anchor_ix = compute_rpn_class_loss(rpn_match, rpn_class_logits[b], self.cf.shem_poolsize)
-            rpn_bbox_loss = compute_rpn_bbox_loss(rpn_target_deltas, rpn_pred_deltas[b], rpn_match)
+            rpn_class_loss, neg_anchor_ix = compute_rpn_class_loss(
+                rpn_match, rpn_class_logits[b], self.cf.shem_poolsize)
+            rpn_bbox_loss = compute_rpn_bbox_loss(
+                rpn_target_deltas, rpn_pred_deltas[b], rpn_match)
             batch_rpn_class_loss += rpn_class_loss / img.shape[0]
             batch_rpn_bbox_loss += rpn_bbox_loss / img.shape[0]
 
             # add negative anchors used for loss to output list for monitoring.
-            neg_anchors = mutils.clip_boxes_numpy(self.np_anchors[np.argwhere(rpn_match == -1)][0, neg_anchor_ix], img.shape[2:])
+            neg_anchors = mutils.clip_boxes_numpy(
+                self.np_anchors[np.argwhere(rpn_match == -1)][0, neg_anchor_ix], img.shape[2:])
             for n in neg_anchors:
-                box_results_list[b].append({'box_coords': n, 'box_type': 'neg_anchor'})
+                box_results_list[b].append(
+                    {'box_coords': n, 'box_type': 'neg_anchor'})
 
             # add highest scoring proposals to output list for monitoring.
-            rpn_proposals = proposal_boxes[b][proposal_boxes[b, :, -1].argsort()][::-1]
+            rpn_proposals = proposal_boxes[b][proposal_boxes[b,
+                                                             :, -1].argsort()][::-1]
             for r in rpn_proposals[:self.cf.n_plot_rpn_props, :-1]:
-                box_results_list[b].append({'box_coords': r, 'box_type': 'prop'})
+                box_results_list[b].append(
+                    {'box_coords': r, 'box_type': 'prop'})
 
         # add positive and negative roi samples used for mrcnn losses to output list for monitoring.
         if 0 not in sample_proposals.shape:
-            rois = mutils.clip_to_window(self.cf.window, sample_proposals).cpu().data.numpy()
+            rois = mutils.clip_to_window(
+                self.cf.window, sample_proposals).cpu().data.numpy()
             for ix, r in enumerate(rois):
                 box_results_list[int(r[-1])].append({'box_coords': r[:-1] * self.cf.scale,
-                                            'box_type': 'pos_class' if target_class_ids[ix] > 0 else 'neg_class'})
+                                                     'box_type': 'pos_class' if target_class_ids[ix] > 0 else 'neg_class'})
 
         batch_rpn_class_loss = batch_rpn_class_loss
         batch_rpn_bbox_loss = batch_rpn_bbox_loss
-        batch_rpn_class_loss = torch.FloatTensor([0]).cuda() #@rtgunti : to inhibit RPN loss when finetuning 2nd stage
-        batch_rpn_bbox_loss = torch.FloatTensor([0]).cuda()
+
         # compute mrcnn losses.
-        mrcnn_class_loss = compute_mrcnn_class_loss(target_class_ids, mrcnn_class_logits)
-        mrcnn_bbox_loss = compute_mrcnn_bbox_loss(mrcnn_target_deltas, mrcnn_pred_deltas, target_class_ids)
+        mrcnn_class_loss = compute_mrcnn_class_loss(
+            target_class_ids, mrcnn_class_logits)
+        mrcnn_bbox_loss = compute_mrcnn_bbox_loss(
+            mrcnn_target_deltas, mrcnn_pred_deltas, target_class_ids)
 
         # mrcnn can be run without pixelwise annotations available (Faster R-CNN mode).
         # In this case, the mask_loss is taken out of training.
         if not self.cf.frcnn_mode:
-            mrcnn_mask_loss = compute_mrcnn_mask_loss(target_mask, mrcnn_pred_mask, target_class_ids)
+            mrcnn_mask_loss = compute_mrcnn_mask_loss(
+                target_mask, mrcnn_pred_mask, target_class_ids)
         else:
             mrcnn_mask_loss = torch.FloatTensor([0]).cuda()
 
-        loss = batch_rpn_class_loss + batch_rpn_bbox_loss + mrcnn_class_loss + mrcnn_bbox_loss + mrcnn_mask_loss
+        loss = batch_rpn_class_loss + batch_rpn_bbox_loss + \
+            mrcnn_class_loss + mrcnn_bbox_loss + mrcnn_mask_loss
 
         # monitor RPN performance: detection count = the number of correctly matched proposals per fg-class.
-        dcount = [list(target_class_ids.cpu().data.numpy()).count(c) for c in np.arange(self.cf.head_classes)[1:]]
+        dcount = [list(target_class_ids.cpu().data.numpy()).count(c)
+                  for c in np.arange(self.cf.head_classes)[1:]]
 
         # run unmolding of predictions for monitoring and merge all results to one dictionary.
         return_masks = self.cf.return_masks_in_val if is_validation else False
@@ -1066,7 +1009,8 @@ class net(nn.Module):
                                    box_results_list, return_masks=return_masks)
 
         results_dict['torch_loss'] = loss
-        results_dict['monitor_values'] = {'loss': loss.item(), 'class_loss': mrcnn_class_loss.item()}
+        results_dict['monitor_values'] = {
+            'loss': loss.item(), 'class_loss': mrcnn_class_loss.item()}
 
         results_dict['logger_string'] =  \
             "loss: {0:.2f}, rpn_class: {1:.2f}, rpn_bbox: {2:.2f}, mrcnn_class: {3:.2f}, mrcnn_bbox: {4:.2f}, " \
@@ -1075,7 +1019,6 @@ class net(nn.Module):
                                                      mrcnn_bbox_loss.item(), mrcnn_mask_loss.item(), dcount)
 
         return results_dict
-
 
     def test_forward(self, batch, return_masks=True):
         """
@@ -1088,13 +1031,12 @@ class net(nn.Module):
                        [[{box_0}, ... {box_n}], [{box_0}, ... {box_n}], ...]
                'seg_preds': pixel-wise class predictions (b, 1, y, x, (z)) with values [0, n_classes]
         """
-        print('in test_forward')
         img = batch['data']
         img = torch.from_numpy(img).float().cuda()
-        _, _, _, detections, detection_masks = self.forward(img, is_training=False)
-        results_dict = get_results(self.cf, img.shape, detections, detection_masks, return_masks=return_masks)
+        _, _, _, detections, detection_masks = self.forward(img)
+        results_dict = get_results(
+            self.cf, img.shape, detections, detection_masks, return_masks=return_masks)
         return results_dict
-
 
     def forward(self, img, is_training=True):
         """
@@ -1106,72 +1048,67 @@ class net(nn.Module):
         :return: detection_masks: (n_final_detections, n_classes, y, x, (z)) raw molded masks as returned by mask-head.
         """
         # extract features.
-        fpn_outs = self.Fpn(img)
+        fpn_outs = self.fpn(img)
         rpn_feature_maps = [fpn_outs[i] for i in self.cf.pyramid_levels]
         self.mrcnn_feature_maps = rpn_feature_maps
 
-#         # loop through pyramid layers and apply RPN.
-#         layer_outputs = []  # list of lists
-#         for p in rpn_feature_maps:
-#             layer_outputs.append(self.Rpn(p))
-
-        # loop through pyramid layers and apply RPN. @rtgunti Add Classifier and BBRegressor heads just as in Retina-Net
+        # loop through pyramid layers and apply RPN.
         layer_outputs = []  # list of lists
         for p in rpn_feature_maps:
-            cl_outs = self.Rpn_Classifier(p)
-            bb_outs = self.Rpn_BBRegressor(p)  
-            cl_outs.extend(bb_outs)
-            layer_outputs.append(cl_outs)            
-            
-            
+            layer_outputs.append(self.rpn(p))
+
         # concatenate layer outputs.
         # convert from list of lists of level outputs to list of lists of outputs across levels.
         # e.g. [[a1, b1, c1], [a2, b2, c2]] => [[a1, a2], [b1, b2], [c1, c2]]
         outputs = list(zip(*layer_outputs))
         outputs = [torch.cat(list(o), dim=1) for o in outputs]
         rpn_pred_logits, rpn_pred_probs, rpn_pred_deltas = outputs
-        
+
         # generate proposals: apply predicted deltas to anchors and filter by foreground scores from RPN classifier.
-        print('is_training', is_training)
         proposal_count = self.cf.post_nms_rois_training if is_training else self.cf.post_nms_rois_inference
-        print('proposal_count', proposal_count)
-        batch_rpn_rois, batch_proposal_boxes = proposal_layer(rpn_pred_probs, rpn_pred_deltas, proposal_count, self.anchors, self.cf)
-        print('batch_rpn_rois ', len(batch_rpn_rois))
+        batch_rpn_rois, batch_proposal_boxes = proposal_layer(
+            rpn_pred_probs, rpn_pred_deltas, proposal_count, self.anchors, self.cf)
 
         # merge batch dimension of proposals while storing allocation info in coordinate dimension.
-        batch_ixs = torch.from_numpy(np.repeat(np.arange(batch_rpn_rois.shape[0]), batch_rpn_rois.shape[1])).float().cuda()
+        batch_ixs = torch.from_numpy(np.repeat(
+            np.arange(batch_rpn_rois.shape[0]), batch_rpn_rois.shape[1])).float().cuda()
         rpn_rois = batch_rpn_rois.view(-1, batch_rpn_rois.shape[2])
-        self.rpn_rois_batch_info = torch.cat((rpn_rois, batch_ixs.unsqueeze(1)), dim=1)
+        self.rpn_rois_batch_info = torch.cat(
+            (rpn_rois, batch_ixs.unsqueeze(1)), dim=1)
 
         # this is the first of two forward passes in the second stage, where no activations are stored for backprop.
         # here, all proposals are forwarded (with virtual_batch_size = batch_size * post_nms_rois.)
         # for inference/monitoring as well as sampling of rois for the loss functions.
         # processed in chunks of roi_chunk_size to re-adjust to gpu-memory.
-        chunked_rpn_rois = self.rpn_rois_batch_info.split(self.cf.roi_chunk_size)
+        chunked_rpn_rois = self.rpn_rois_batch_info.split(
+            self.cf.roi_chunk_size)
         class_logits_list, bboxes_list = [], []
         with torch.no_grad():
             for chunk in chunked_rpn_rois:
-                chunk_class_logits, chunk_bboxes = self.Classifier(self.mrcnn_feature_maps, chunk)
+                chunk_class_logits, chunk_bboxes = self.classifier(
+                    self.mrcnn_feature_maps, chunk)
                 class_logits_list.append(chunk_class_logits)
                 bboxes_list.append(chunk_bboxes)
         batch_mrcnn_class_logits = torch.cat(class_logits_list, 0)
         batch_mrcnn_bbox = torch.cat(bboxes_list, 0)
-        self.batch_mrcnn_class_scores = F.softmax(batch_mrcnn_class_logits, dim=1)
+        self.batch_mrcnn_class_scores = F.softmax(
+            batch_mrcnn_class_logits, dim=1)
 
         # refine classified proposals, filter and return final detections.
-        detections = refine_detections(rpn_rois, self.batch_mrcnn_class_scores, batch_mrcnn_bbox, batch_ixs, self.cf, )
+        detections = refine_detections(
+            rpn_rois, self.batch_mrcnn_class_scores, batch_mrcnn_bbox, batch_ixs, self.cf, )
 
         # forward remaining detections through mask-head to generate corresponding masks.
         scale = [img.shape[2]] * 4 + [img.shape[-1]] * 2
-        scale = torch.from_numpy(np.array(scale[:self.cf.dim * 2] + [1])[None]).float().cuda()
-
+        scale = torch.from_numpy(
+            np.array(scale[:self.cf.dim * 2] + [1])[None]).float().cuda()
 
         detection_boxes = detections[:, :self.cf.dim * 2 + 1] / scale
         with torch.no_grad():
-            detection_masks = self.Mask(self.mrcnn_feature_maps, detection_boxes)
+            detection_masks = self.mask(
+                self.mrcnn_feature_maps, detection_boxes)
 
         return [rpn_pred_logits, rpn_pred_deltas, batch_proposal_boxes, detections, detection_masks]
-
 
     def loss_samples_forward(self, batch_gt_class_ids, batch_gt_boxes, batch_gt_masks):
         """
@@ -1196,8 +1133,9 @@ class net(nn.Module):
         # re-use feature maps and RPN output from first forward pass.
         sample_proposals = self.rpn_rois_batch_info[sample_ix]
         if 0 not in sample_proposals.size():
-            sample_logits, sample_boxes = self.Classifier(self.mrcnn_feature_maps, sample_proposals)
-            sample_mask = self.Mask(self.mrcnn_feature_maps, sample_proposals)
+            sample_logits, sample_boxes = self.classifier(
+                self.mrcnn_feature_maps, sample_proposals)
+            sample_mask = self.mask(self.mrcnn_feature_maps, sample_proposals)
         else:
             sample_logits = torch.FloatTensor().cuda()
             sample_boxes = torch.FloatTensor().cuda()
